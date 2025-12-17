@@ -38,8 +38,13 @@ export default function Assets() {
 
   const getStaffName = (staffId: string) => {
     if (!staffId) return "-";
+    // First try to find by ID
     const staffMember = staff.find((s) => s.id === staffId);
-    return staffMember?.name || "-";
+    if (staffMember) return staffMember.name;
+    // Fallback: check if it's already a name (for old data)
+    const staffByName = staff.find((s) => s.name === staffId);
+    if (staffByName) return staffByName.name;
+    return staffId || "-";
   };
 
   const filteredAssets = assets.filter((asset) => {
