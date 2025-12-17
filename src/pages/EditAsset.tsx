@@ -55,6 +55,7 @@ export default function EditAsset() {
     tagAttached: false,
     quantity: "1",
     comments: "",
+    assignedTo: "",
   });
 
   const [subcategories, setSubcategories] = useState<{ code: string; name: string }[]>([]);
@@ -88,6 +89,7 @@ export default function EditAsset() {
         tagAttached: asset.tagAttached || false,
         quantity: asset.quantity?.toString() || "1",
         comments: asset.comments || "",
+        assignedTo: asset.assignedTo || "",
       });
     }
   }, [asset]);
@@ -138,6 +140,7 @@ export default function EditAsset() {
       tagAttached: formData.tagAttached,
       quantity: parseInt(formData.quantity) || 1,
       comments: formData.comments,
+      assignedTo: formData.assignedTo,
     });
 
     toast({
@@ -338,6 +341,15 @@ export default function EditAsset() {
                 value={formData.quantity}
                 onChange={(e) => updateField("quantity", e.target.value)}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="assignedTo">Assigned To</Label>
+              <Input
+                id="assignedTo"
+                placeholder="Enter user name"
+                value={formData.assignedTo}
+                onChange={(e) => updateField("assignedTo", e.target.value)}
               />
             </div>
           </div>

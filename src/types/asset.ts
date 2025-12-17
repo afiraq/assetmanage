@@ -23,6 +23,7 @@ export interface Asset {
   tagAttached: boolean;
   quantity: number;
   comments: string;
+  assignedTo: string;
   createdAt: string;
 }
 
