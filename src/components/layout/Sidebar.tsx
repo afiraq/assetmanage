@@ -14,19 +14,19 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Assets", href: "/assets", icon: Package },
-  { name: "Add Asset", href: "/assets/new", icon: Plus },
-  { name: "Categories", href: "/categories", icon: FolderTree },
-  { name: "Locations", href: "/locations", icon: MapPin },
-  { name: "Reports", href: "/reports", icon: FileBarChart },
-  { name: "Settings", href: "/settings", icon: Settings },
+  { name: "Dashboard", href: "/", icon: LayoutDashboard, adminOnly: false },
+  { name: "Assets", href: "/assets", icon: Package, adminOnly: false },
+  { name: "Add Asset", href: "/assets/new", icon: Plus, adminOnly: false },
+  { name: "Categories", href: "/categories", icon: FolderTree, adminOnly: false },
+  { name: "Locations", href: "/locations", icon: MapPin, adminOnly: false },
+  { name: "Reports", href: "/reports", icon: FileBarChart, adminOnly: false },
+  { name: "Settings", href: "/settings", icon: Settings, adminOnly: true },
 ];
 
 export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
 
   const userFullName = user?.user_metadata?.full_name || "User";
   const userEmail = user?.email || "";
@@ -58,7 +58,9 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4">
-          {navigation.map((item) => {
+          {navigation
+            .filter((item) => !item.adminOnly || isAdmin)
+            .map((item) => {
             const isActive = location.pathname === item.href || 
               (item.href !== "/" && location.pathname.startsWith(item.href));
             
