@@ -67,8 +67,8 @@ export default function Reports() {
   return (
     <MainLayout title="Reports" subtitle="Generate and export asset reports">
       <div className="space-y-6">
-        {/* Report Controls */}
-        <div className="rounded-xl bg-card border border-border p-6 shadow-sm">
+        {/* Report Controls - Hidden when printing */}
+        <div className="rounded-xl bg-card border border-border p-6 shadow-sm print:hidden">
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
             <div className="flex gap-3 flex-wrap">
               <Select value={reportType} onValueChange={(value) => {
