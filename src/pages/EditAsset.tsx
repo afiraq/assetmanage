@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAssets } from "@/hooks/useAssets";
-import { categories } from "@/data/categories";
+import { categories, getSubcategoryByCode } from "@/data/categories";
 import { useToast } from "@/hooks/use-toast";
 
 export default function EditAsset() {
@@ -33,6 +33,10 @@ export default function EditAsset() {
     serial: "",
     specification: "",
     itemName: "",
+    officeNumber: "",
+    yearNumber: "",
+    categoryNumber: "",
+    itemNumber: "",
     location: "",
     sublocation: "",
     price: "",
@@ -46,6 +50,7 @@ export default function EditAsset() {
     comments: "",
   });
 
+  const [subcategories, setSubcategories] = useState<{ code: string; name: string }[]>([]);
   const [sublocations, setSublocations] = useState<string[]>([]);
 
   // Load asset data when found
@@ -58,6 +63,10 @@ export default function EditAsset() {
         serial: asset.serial || "",
         specification: asset.specification || "",
         itemName: asset.itemName || "",
+        officeNumber: asset.officeNumber || "",
+        yearNumber: asset.yearNumber || "",
+        categoryNumber: asset.categoryNumber || "",
+        itemNumber: asset.itemNumber || "",
         location: asset.location || "",
         sublocation: asset.sublocation || "",
         price: asset.price?.toString() || "",
@@ -72,6 +81,12 @@ export default function EditAsset() {
       });
     }
   }, [asset]);
+
+  // Update subcategories when category changes
+  useEffect(() => {
+    const category = categories.find((c) => c.code === formData.categoryNumber);
+    setSubcategories(category?.subcategories || []);
+  }, [formData.categoryNumber]);
 
   // Update sublocations when location changes
   useEffect(() => {
@@ -98,6 +113,10 @@ export default function EditAsset() {
       serial: formData.serial,
       specification: formData.specification,
       itemName: formData.itemName,
+      officeNumber: formData.officeNumber,
+      yearNumber: formData.yearNumber,
+      categoryNumber: formData.categoryNumber,
+      itemNumber: formData.itemNumber,
       location: formData.location,
       sublocation: formData.sublocation,
       price: parseFloat(formData.price) || 0,
@@ -150,6 +169,70 @@ export default function EditAsset() {
               <p className="text-2xl font-mono font-bold text-card-foreground">
                 {asset.assetNumber}
               </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Asset Number Components */}
+        <div className="rounded-xl bg-card border border-border p-6 shadow-sm space-y-6">
+          <h3 className="text-lg font-semibold text-card-foreground">Asset Number Components</h3>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <Label htmlFor="officeNumber">Office Number *</Label>
+              <Input
+                id="officeNumber"
+                placeholder="e.g., 221"
+                value={formData.officeNumber}
+                onChange={(e) => updateField("officeNumber", e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="yearNumber">Year Number *</Label>
+              <Input
+                id="yearNumber"
+                placeholder="e.g., 25"
+                value={formData.yearNumber}
+                onChange={(e) => updateField("yearNumber", e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="categoryNumber">Category *</Label>
+              <Select
+                value={formData.categoryNumber}
+                onValueChange={(value) => updateField("categoryNumber", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.code}>
+                      {cat.code} - {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="itemNumber">Item Code *</Label>
+              <Select
+                value={formData.itemNumber}
+                onValueChange={(value) => updateField("itemNumber", value)}
+                disabled={subcategories.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={subcategories.length === 0 ? "Select category first" : "Select item"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {subcategories.map((sub) => (
+                    <SelectItem key={sub.code} value={sub.code}>
+                      {sub.code} - {sub.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
