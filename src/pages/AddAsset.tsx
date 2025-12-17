@@ -102,8 +102,8 @@ export default function AddAsset() {
     setFormData((prev) => ({ ...prev, sublocation: "" }));
   }, [formData.location, locations]);
 
-  // Get all available item names (subcategories + custom)
-  const availableItemNames = [...subcategories.map(s => s.name), ...customItemNames];
+  // Get all available item names (subcategories + custom) - filter out empty strings
+  const availableItemNames = [...subcategories.map(s => s.name), ...customItemNames].filter(name => name && name.trim() !== "");
 
   const handleAddCustomItemName = () => {
     if (newItemName.trim() && !availableItemNames.includes(newItemName.trim())) {

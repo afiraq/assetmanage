@@ -180,7 +180,7 @@ export default function EditAsset() {
   const allItemNames = [
     ...subcategories.map((sub) => sub.name),
     ...customItemNames,
-  ];
+  ].filter(name => name && name.trim() !== "");
 
   if (!asset) {
     return (
