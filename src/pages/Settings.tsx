@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, Shield, Bell, Database, Users, Plus, Pencil, Trash2, UserPlus } from "lucide-react";
+import { User, Shield, Bell, Database, Users, Plus, Pencil, Trash2, UserPlus, KeyRound } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -94,8 +94,11 @@ export default function Settings() {
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
   const [isDeleteUserDialogOpen, setIsDeleteUserDialogOpen] = useState(false);
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
   const [userToDelete, setUserToDelete] = useState<SystemUser | null>(null);
+  const [userToResetPassword, setUserToResetPassword] = useState<SystemUser | null>(null);
+  const [newPassword, setNewPassword] = useState("");
   const [userFormData, setUserFormData] = useState({
     email: "",
     password: "",
@@ -493,6 +496,56 @@ export default function Settings() {
     }
   };
 
+  const handleResetPasswordClick = (user: SystemUser) => {
+    setUserToResetPassword(user);
+    setNewPassword("");
+    setIsResetPasswordDialogOpen(true);
+  };
+
+  const handleResetPassword = async () => {
+    if (!userToResetPassword || !newPassword) return;
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Validation Error",
+        description: "Password must be at least 6 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: {
+          action: "reset_password",
+          userId: userToResetPassword.id,
+          password: newPassword,
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      setUserToResetPassword(null);
+      setNewPassword("");
+      setIsResetPasswordDialogOpen(false);
+      toast({
+        title: "Password Reset",
+        description: `Password for ${userToResetPassword.fullName} has been reset successfully.`,
+      });
+    } catch (err) {
+      const error = err as Error;
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reset password.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <MainLayout title="Settings" subtitle="System configuration and preferences">
       <div className="space-y-6 max-w-4xl">
@@ -545,6 +598,14 @@ export default function Settings() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Reset Password"
+                            onClick={() => handleResetPasswordClick(user)}
+                          >
+                            <KeyRound className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1184,6 +1245,38 @@ export default function Settings() {
                 Save Configuration
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for {userToResetPassword?.fullName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                placeholder="Enter new password (min 6 characters)"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsResetPasswordDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleResetPassword} disabled={isSaving}>
+              {isSaving ? "Resetting..." : "Reset Password"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
