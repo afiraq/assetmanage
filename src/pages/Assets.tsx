@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Plus, Download, Upload, Search, Filter, Eye, Pencil, Trash2 } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AssetBarcode } from "@/components/assets/AssetBarcode";
 
 export default function Assets() {
+  const navigate = useNavigate();
   const { assets, exportToCSV, importFromCSV, deleteAsset } = useAssets();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
@@ -208,7 +209,12 @@ export default function Assets() {
                         <Button variant="ghost" size="icon" className="h-8 w-8">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => navigate(`/assets/${asset.id}/edit`)}
+                        >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
