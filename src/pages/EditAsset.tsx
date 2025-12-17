@@ -383,7 +383,7 @@ export default function EditAsset() {
                 <SelectContent>
                   <SelectItem value="__none__">Not Assigned</SelectItem>
                   {activeStaff.map((member) => (
-                    <SelectItem key={member.id} value={member.name}>
+                    <SelectItem key={member.id} value={member.id}>
                       {member.name}
                       {member.department && ` (${member.department})`}
                     </SelectItem>
