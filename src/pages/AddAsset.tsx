@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Save, ArrowLeft, Barcode } from "lucide-react";
+import { Save, ArrowLeft, Barcode, Plus } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useAssets } from "@/hooks/useAssets";
-import { categories, getSubcategoryByCode } from "@/data/categories";
+import { categories } from "@/data/categories";
 import { Asset } from "@/types/asset";
 import { useToast } from "@/hooks/use-toast";
 
@@ -51,6 +58,9 @@ export default function AddAsset() {
   const [generatedAssetNumber, setGeneratedAssetNumber] = useState("");
   const [subcategories, setSubcategories] = useState<{ code: string; name: string }[]>([]);
   const [sublocations, setSublocations] = useState<string[]>([]);
+  const [customItemNames, setCustomItemNames] = useState<string[]>([]);
+  const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+  const [newItemName, setNewItemName] = useState("");
 
   // Update asset number when codes change
   useEffect(() => {
@@ -81,15 +91,25 @@ export default function AddAsset() {
     setFormData((prev) => ({ ...prev, sublocation: "" }));
   }, [formData.location, locations]);
 
-  // Auto-fill item name from subcategory
-  useEffect(() => {
-    if (formData.categoryNumber && formData.itemNumber) {
-      const subcategory = getSubcategoryByCode(formData.categoryNumber, formData.itemNumber);
-      if (subcategory && !formData.itemName) {
-        setFormData((prev) => ({ ...prev, itemName: subcategory.name }));
-      }
+  // Get all available item names (subcategories + custom)
+  const availableItemNames = [...subcategories.map(s => s.name), ...customItemNames];
+
+  const handleAddCustomItemName = () => {
+    if (newItemName.trim() && !availableItemNames.includes(newItemName.trim())) {
+      setCustomItemNames(prev => [...prev, newItemName.trim()]);
+      setFormData(prev => ({ ...prev, itemName: newItemName.trim() }));
+      setNewItemName("");
+      setIsAddItemDialogOpen(false);
     }
-  }, [formData.categoryNumber, formData.itemNumber, formData.itemName]);
+  };
+
+  const handleItemNameChange = (value: string) => {
+    if (value === "__add_new__") {
+      setIsAddItemDialogOpen(true);
+    } else {
+      updateField("itemName", value);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,13 +260,27 @@ export default function AddAsset() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="itemName">Item Name *</Label>
-              <Input
-                id="itemName"
-                placeholder="Enter item name"
+              <Select
                 value={formData.itemName}
-                onChange={(e) => updateField("itemName", e.target.value)}
-                required
-              />
+                onValueChange={handleItemNameChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select item name" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableItemNames.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__add_new__" className="text-primary">
+                    <span className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Add New Item
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="brand">Brand</Label>
@@ -447,6 +481,34 @@ export default function AddAsset() {
           </Button>
         </div>
       </form>
+
+      {/* Add New Item Dialog */}
+      <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Item Name</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="newItemName">Item Name</Label>
+              <Input
+                id="newItemName"
+                placeholder="Enter new item name"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddItemDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddCustomItemName} disabled={!newItemName.trim()}>
+              Add Item
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
