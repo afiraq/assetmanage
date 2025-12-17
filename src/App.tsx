@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Assets from "./pages/Assets";
 import AddAsset from "./pages/AddAsset";
+import EditAsset from "./pages/EditAsset";
 import Categories from "./pages/Categories";
 import Locations from "./pages/Locations";
 import Reports from "./pages/Reports";
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/assets" element={<ProtectedRoute><Assets /></ProtectedRoute>} />
             <Route path="/assets/new" element={<ProtectedRoute><AddAsset /></ProtectedRoute>} />
+            <Route path="/assets/:id/edit" element={<ProtectedRoute><EditAsset /></ProtectedRoute>} />
             <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
             <Route path="/locations" element={<ProtectedRoute><Locations /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
