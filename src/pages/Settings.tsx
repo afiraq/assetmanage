@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, Shield, Bell, Database, Users, Plus, Pencil, Trash2 } from "lucide-react";
+import { User, Shield, Bell, Database, Users, Plus, Pencil, Trash2, UserPlus } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -36,6 +43,14 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useStaff, Staff } from "@/hooks/useStaff";
+
+interface SystemUser {
+  id: string;
+  email: string;
+  fullName: string;
+  role: "admin" | "user";
+  createdAt: string;
+}
 
 interface LdapConfig {
   enabled: boolean;
@@ -56,14 +71,15 @@ const defaultLdapConfig: LdapConfig = {
 };
 
 export default function Settings() {
-  const { staff, isLoading, addStaff, updateStaff, deleteStaff } = useStaff();
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isLdapDialogOpen, setIsLdapDialogOpen] = useState(false);
+  const { staff, isLoading: staffLoading, addStaff, updateStaff, deleteStaff } = useStaff();
+  
+  // Staff Management State
+  const [isAddStaffDialogOpen, setIsAddStaffDialogOpen] = useState(false);
+  const [isEditStaffDialogOpen, setIsEditStaffDialogOpen] = useState(false);
+  const [isDeleteStaffDialogOpen, setIsDeleteStaffDialogOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [staffToDelete, setStaffToDelete] = useState<Staff | null>(null);
-  const [formData, setFormData] = useState({
+  const [staffFormData, setStaffFormData] = useState({
     name: "",
     email: "",
     employee_id: "",
@@ -71,10 +87,51 @@ export default function Settings() {
     position: "",
     is_active: true,
   });
+
+  // System Users State
+  const [systemUsers, setSystemUsers] = useState<SystemUser[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
+  const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
+  const [isDeleteUserDialogOpen, setIsDeleteUserDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<SystemUser | null>(null);
+  const [userToDelete, setUserToDelete] = useState<SystemUser | null>(null);
+  const [userFormData, setUserFormData] = useState({
+    email: "",
+    password: "",
+    fullName: "",
+    role: "user" as "admin" | "user",
+  });
+
   const [ldapConfig, setLdapConfig] = useState<LdapConfig>(defaultLdapConfig);
+  const [isLdapDialogOpen, setIsLdapDialogOpen] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+
+  // Load system users
+  const loadSystemUsers = async () => {
+    try {
+      setIsLoadingUsers(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: { action: "list" },
+      });
+
+      if (error) throw error;
+      setSystemUsers(data.users || []);
+    } catch (error) {
+      console.error("Error loading users:", error);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSystemUsers();
+  }, []);
 
   // Load LDAP config from localStorage
   useEffect(() => {
@@ -159,8 +216,9 @@ export default function Settings() {
     }
   };
 
-  const resetForm = () => {
-    setFormData({
+  // Staff Management Functions
+  const resetStaffForm = () => {
+    setStaffFormData({
       name: "",
       email: "",
       employee_id: "",
@@ -171,7 +229,7 @@ export default function Settings() {
   };
 
   const handleAddStaff = async () => {
-    if (!formData.name.trim()) {
+    if (!staffFormData.name.trim()) {
       toast({
         title: "Validation Error",
         description: "Please enter a name.",
@@ -182,12 +240,12 @@ export default function Settings() {
 
     setIsSaving(true);
     const { error } = await addStaff({
-      name: formData.name.trim(),
-      email: formData.email.trim() || null,
-      employee_id: formData.employee_id.trim() || null,
-      department: formData.department.trim() || null,
-      position: formData.position.trim() || null,
-      is_active: formData.is_active,
+      name: staffFormData.name.trim(),
+      email: staffFormData.email.trim() || null,
+      employee_id: staffFormData.employee_id.trim() || null,
+      department: staffFormData.department.trim() || null,
+      position: staffFormData.position.trim() || null,
+      is_active: staffFormData.is_active,
     });
 
     setIsSaving(false);
@@ -201,17 +259,17 @@ export default function Settings() {
       return;
     }
 
-    resetForm();
-    setIsAddDialogOpen(false);
+    resetStaffForm();
+    setIsAddStaffDialogOpen(false);
     toast({
       title: "Staff Added",
-      description: `${formData.name} has been added successfully.`,
+      description: `${staffFormData.name} has been added successfully.`,
     });
   };
 
-  const handleEditClick = (member: Staff) => {
+  const handleEditStaffClick = (member: Staff) => {
     setEditingStaff(member);
-    setFormData({
+    setStaffFormData({
       name: member.name,
       email: member.email || "",
       employee_id: member.employee_id || "",
@@ -219,22 +277,22 @@ export default function Settings() {
       position: member.position || "",
       is_active: member.is_active,
     });
-    setIsEditDialogOpen(true);
+    setIsEditStaffDialogOpen(true);
   };
 
   const handleEditStaff = async () => {
-    if (!editingStaff || !formData.name.trim()) {
+    if (!editingStaff || !staffFormData.name.trim()) {
       return;
     }
 
     setIsSaving(true);
     const { error } = await updateStaff(editingStaff.id, {
-      name: formData.name.trim(),
-      email: formData.email.trim() || null,
-      employee_id: formData.employee_id.trim() || null,
-      department: formData.department.trim() || null,
-      position: formData.position.trim() || null,
-      is_active: formData.is_active,
+      name: staffFormData.name.trim(),
+      email: staffFormData.email.trim() || null,
+      employee_id: staffFormData.employee_id.trim() || null,
+      department: staffFormData.department.trim() || null,
+      position: staffFormData.position.trim() || null,
+      is_active: staffFormData.is_active,
     });
 
     setIsSaving(false);
@@ -248,18 +306,18 @@ export default function Settings() {
       return;
     }
 
-    resetForm();
+    resetStaffForm();
     setEditingStaff(null);
-    setIsEditDialogOpen(false);
+    setIsEditStaffDialogOpen(false);
     toast({
       title: "Staff Updated",
       description: "Staff member has been updated successfully.",
     });
   };
 
-  const handleDeleteClick = (member: Staff) => {
+  const handleDeleteStaffClick = (member: Staff) => {
     setStaffToDelete(member);
-    setIsDeleteDialogOpen(true);
+    setIsDeleteStaffDialogOpen(true);
   };
 
   const handleDeleteStaff = async () => {
@@ -277,16 +335,240 @@ export default function Settings() {
     }
 
     setStaffToDelete(null);
-    setIsDeleteDialogOpen(false);
+    setIsDeleteStaffDialogOpen(false);
     toast({
       title: "Staff Deleted",
       description: `${staffToDelete.name} has been removed.`,
     });
   };
 
+  // System User Management Functions
+  const resetUserForm = () => {
+    setUserFormData({
+      email: "",
+      password: "",
+      fullName: "",
+      role: "user",
+    });
+  };
+
+  const handleAddUser = async () => {
+    if (!userFormData.email.trim() || !userFormData.password.trim() || !userFormData.fullName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (userFormData.password.length < 6) {
+      toast({
+        title: "Validation Error",
+        description: "Password must be at least 6 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: {
+          action: "create",
+          email: userFormData.email.trim(),
+          password: userFormData.password,
+          fullName: userFormData.fullName.trim(),
+          role: userFormData.role,
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      resetUserForm();
+      setIsAddUserDialogOpen(false);
+      loadSystemUsers();
+      toast({
+        title: "User Created",
+        description: `${userFormData.fullName} can now login with their credentials.`,
+      });
+    } catch (err) {
+      const error = err as Error;
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create user.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEditUserClick = (user: SystemUser) => {
+    setEditingUser(user);
+    setUserFormData({
+      email: user.email,
+      password: "",
+      fullName: user.fullName,
+      role: user.role,
+    });
+    setIsEditUserDialogOpen(true);
+  };
+
+  const handleEditUser = async () => {
+    if (!editingUser || !userFormData.email.trim() || !userFormData.fullName.trim()) {
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: {
+          action: "update",
+          userId: editingUser.id,
+          email: userFormData.email.trim(),
+          password: userFormData.password || undefined,
+          fullName: userFormData.fullName.trim(),
+          role: userFormData.role,
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      resetUserForm();
+      setEditingUser(null);
+      setIsEditUserDialogOpen(false);
+      loadSystemUsers();
+      toast({
+        title: "User Updated",
+        description: "User has been updated successfully.",
+      });
+    } catch (err) {
+      const error = err as Error;
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteUserClick = (user: SystemUser) => {
+    setUserToDelete(user);
+    setIsDeleteUserDialogOpen(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke("create-user", {
+        body: {
+          action: "delete",
+          userId: userToDelete.id,
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      setUserToDelete(null);
+      setIsDeleteUserDialogOpen(false);
+      loadSystemUsers();
+      toast({
+        title: "User Deleted",
+        description: `${userToDelete.fullName} has been removed.`,
+      });
+    } catch (err) {
+      const error = err as Error;
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <MainLayout title="Settings" subtitle="System configuration and preferences">
       <div className="space-y-6 max-w-4xl">
+        {/* System Users (Login Users) */}
+        <div className="rounded-xl bg-card border border-border p-6 shadow-sm animate-fade-in">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <UserPlus className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-card-foreground">System Users</h3>
+                <p className="text-sm text-muted-foreground">Manage users who can login to the system</p>
+              </div>
+            </div>
+            <Button onClick={() => setIsAddUserDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add User
+            </Button>
+          </div>
+
+          {isLoadingUsers ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Loading users...
+            </div>
+          ) : systemUsers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No users found. Click "Add User" to create one.
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {systemUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.fullName}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditUserClick(user)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteUserClick(user)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+
         {/* Staff Management */}
         <div className="rounded-xl bg-card border border-border p-6 shadow-sm animate-fade-in">
           <div className="flex items-center justify-between mb-6">
@@ -296,16 +578,16 @@ export default function Settings() {
               </div>
               <div>
                 <h3 className="font-semibold text-card-foreground">Staff Management</h3>
-                <p className="text-sm text-muted-foreground">Add and manage staff for asset assignment</p>
+                <p className="text-sm text-muted-foreground">Add staff for asset assignment (no login required)</p>
               </div>
             </div>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Button onClick={() => setIsAddStaffDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Staff
             </Button>
           </div>
 
-          {isLoading ? (
+          {staffLoading ? (
             <div className="text-center py-8 text-muted-foreground">
               Loading staff members...
             </div>
@@ -350,14 +632,14 @@ export default function Settings() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleEditClick(member)}
+                            onClick={() => handleEditStaffClick(member)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDeleteClick(member)}
+                            onClick={() => handleDeleteStaffClick(member)}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -502,8 +784,154 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Add System User Dialog */}
+      <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>Create a new user who can login to the system.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="userFullName">Full Name *</Label>
+              <Input
+                id="userFullName"
+                placeholder="Enter full name"
+                value={userFormData.fullName}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, fullName: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="userEmail">Email *</Label>
+              <Input
+                id="userEmail"
+                type="email"
+                placeholder="Enter email address"
+                value={userFormData.email}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="userPassword">Password *</Label>
+              <Input
+                id="userPassword"
+                type="password"
+                placeholder="Enter password (min 6 characters)"
+                value={userFormData.password}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="userRole">Role</Label>
+              <Select 
+                value={userFormData.role} 
+                onValueChange={(value: "admin" | "user") => setUserFormData(prev => ({ ...prev, role: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { resetUserForm(); setIsAddUserDialogOpen(false); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddUser} disabled={isSaving}>
+              {isSaving ? "Creating..." : "Create User"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit System User Dialog */}
+      <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>Update user information. Leave password empty to keep current password.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editUserFullName">Full Name *</Label>
+              <Input
+                id="editUserFullName"
+                placeholder="Enter full name"
+                value={userFormData.fullName}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, fullName: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editUserEmail">Email *</Label>
+              <Input
+                id="editUserEmail"
+                type="email"
+                placeholder="Enter email address"
+                value={userFormData.email}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editUserPassword">New Password (optional)</Label>
+              <Input
+                id="editUserPassword"
+                type="password"
+                placeholder="Leave empty to keep current password"
+                value={userFormData.password}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editUserRole">Role</Label>
+              <Select 
+                value={userFormData.role} 
+                onValueChange={(value: "admin" | "user") => setUserFormData(prev => ({ ...prev, role: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { resetUserForm(); setEditingUser(null); setIsEditUserDialogOpen(false); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditUser} disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete System User Dialog */}
+      <AlertDialog open={isDeleteUserDialogOpen} onOpenChange={setIsDeleteUserDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{userToDelete?.fullName}"? This will remove their login access permanently.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Add Staff Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      <Dialog open={isAddStaffDialogOpen} onOpenChange={setIsAddStaffDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Staff</DialogTitle>
@@ -515,8 +943,8 @@ export default function Settings() {
               <Input
                 id="staffName"
                 placeholder="Enter full name"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                value={staffFormData.name}
+                onChange={(e) => setStaffFormData(prev => ({ ...prev, name: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
@@ -525,8 +953,8 @@ export default function Settings() {
                 id="staffEmail"
                 type="email"
                 placeholder="Enter email address (optional)"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                value={staffFormData.email}
+                onChange={(e) => setStaffFormData(prev => ({ ...prev, email: e.target.value }))}
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -535,8 +963,8 @@ export default function Settings() {
                 <Input
                   id="staffEmployeeId"
                   placeholder="e.g., EMP001"
-                  value={formData.employee_id}
-                  onChange={(e) => setFormData(prev => ({ ...prev, employee_id: e.target.value }))}
+                  value={staffFormData.employee_id}
+                  onChange={(e) => setStaffFormData(prev => ({ ...prev, employee_id: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
@@ -544,8 +972,8 @@ export default function Settings() {
                 <Input
                   id="staffDepartment"
                   placeholder="e.g., IT"
-                  value={formData.department}
-                  onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                  value={staffFormData.department}
+                  onChange={(e) => setStaffFormData(prev => ({ ...prev, department: e.target.value }))}
                 />
               </div>
             </div>
@@ -554,24 +982,24 @@ export default function Settings() {
               <Input
                 id="staffPosition"
                 placeholder="e.g., Software Engineer"
-                value={formData.position}
-                onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
+                value={staffFormData.position}
+                onChange={(e) => setStaffFormData(prev => ({ ...prev, position: e.target.value }))}
               />
             </div>
             <div className="flex items-center space-x-2">
               <Switch
                 id="staffActive"
-                checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+                checked={staffFormData.is_active}
+                onCheckedChange={(checked) => setStaffFormData(prev => ({ ...prev, is_active: checked }))}
               />
               <Label htmlFor="staffActive">Active</Label>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { resetForm(); setIsAddDialogOpen(false); }}>
+            <Button variant="outline" onClick={() => { resetStaffForm(); setIsAddStaffDialogOpen(false); }}>
               Cancel
             </Button>
-            <Button onClick={handleAddStaff} disabled={!formData.name.trim() || isSaving}>
+            <Button onClick={handleAddStaff} disabled={!staffFormData.name.trim() || isSaving}>
               {isSaving ? "Adding..." : "Add Staff"}
             </Button>
           </DialogFooter>
@@ -579,7 +1007,7 @@ export default function Settings() {
       </Dialog>
 
       {/* Edit Staff Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog open={isEditStaffDialogOpen} onOpenChange={setIsEditStaffDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Staff</DialogTitle>
@@ -591,8 +1019,8 @@ export default function Settings() {
               <Input
                 id="editStaffName"
                 placeholder="Enter full name"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                value={staffFormData.name}
+                onChange={(e) => setStaffFormData(prev => ({ ...prev, name: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
@@ -601,8 +1029,8 @@ export default function Settings() {
                 id="editStaffEmail"
                 type="email"
                 placeholder="Enter email address (optional)"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                value={staffFormData.email}
+                onChange={(e) => setStaffFormData(prev => ({ ...prev, email: e.target.value }))}
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -611,8 +1039,8 @@ export default function Settings() {
                 <Input
                   id="editStaffEmployeeId"
                   placeholder="e.g., EMP001"
-                  value={formData.employee_id}
-                  onChange={(e) => setFormData(prev => ({ ...prev, employee_id: e.target.value }))}
+                  value={staffFormData.employee_id}
+                  onChange={(e) => setStaffFormData(prev => ({ ...prev, employee_id: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
@@ -620,8 +1048,8 @@ export default function Settings() {
                 <Input
                   id="editStaffDepartment"
                   placeholder="e.g., IT"
-                  value={formData.department}
-                  onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                  value={staffFormData.department}
+                  onChange={(e) => setStaffFormData(prev => ({ ...prev, department: e.target.value }))}
                 />
               </div>
             </div>
@@ -630,32 +1058,32 @@ export default function Settings() {
               <Input
                 id="editStaffPosition"
                 placeholder="e.g., Software Engineer"
-                value={formData.position}
-                onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
+                value={staffFormData.position}
+                onChange={(e) => setStaffFormData(prev => ({ ...prev, position: e.target.value }))}
               />
             </div>
             <div className="flex items-center space-x-2">
               <Switch
                 id="editStaffActive"
-                checked={formData.is_active}
-                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+                checked={staffFormData.is_active}
+                onCheckedChange={(checked) => setStaffFormData(prev => ({ ...prev, is_active: checked }))}
               />
               <Label htmlFor="editStaffActive">Active</Label>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { resetForm(); setEditingStaff(null); setIsEditDialogOpen(false); }}>
+            <Button variant="outline" onClick={() => { resetStaffForm(); setEditingStaff(null); setIsEditStaffDialogOpen(false); }}>
               Cancel
             </Button>
-            <Button onClick={handleEditStaff} disabled={!formData.name.trim() || isSaving}>
+            <Button onClick={handleEditStaff} disabled={!staffFormData.name.trim() || isSaving}>
               {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      {/* Delete Staff Dialog */}
+      <AlertDialog open={isDeleteStaffDialogOpen} onOpenChange={setIsDeleteStaffDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Staff</AlertDialogTitle>
