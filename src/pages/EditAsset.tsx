@@ -356,14 +356,14 @@ export default function EditAsset() {
             <div className="space-y-2">
               <Label htmlFor="assignedTo">Assigned To</Label>
               <Select
-                value={formData.assignedTo}
-                onValueChange={(value) => updateField("assignedTo", value)}
+                value={formData.assignedTo || "__none__"}
+                onValueChange={(value) => updateField("assignedTo", value === "__none__" ? "" : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select user" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="__none__">None</SelectItem>
                   {appUsers.map((user) => (
                     <SelectItem key={user.id} value={user.name}>
                       {user.name}
