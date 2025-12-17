@@ -23,6 +23,7 @@ import {
 import { useAssets } from "@/hooks/useAssets";
 import { categories } from "@/data/categories";
 import { useToast } from "@/hooks/use-toast";
+import { AssetBarcode } from "@/components/assets/AssetBarcode";
 
 export default function Assets() {
   const { assets, exportToCSV, importFromCSV, deleteAsset } = useAssets();
@@ -203,6 +204,7 @@ export default function Assets() {
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
+                        <AssetBarcode asset={asset} />
                         <Button variant="ghost" size="icon" className="h-8 w-8">
                           <Eye className="h-4 w-4" />
                         </Button>
