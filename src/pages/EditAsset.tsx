@@ -44,6 +44,7 @@ export default function EditAsset() {
     yearNumber: "",
     categoryNumber: "",
     itemNumber: "",
+    sequenceNumber: "",
     location: "",
     sublocation: "",
     price: "",
@@ -88,6 +89,7 @@ export default function EditAsset() {
         yearNumber: asset.yearNumber || "",
         categoryNumber: asset.categoryNumber || "",
         itemNumber: asset.itemNumber || "",
+        sequenceNumber: asset.sequenceNumber || "",
         location: asset.location || "",
         sublocation: asset.sublocation || "",
         price: asset.price?.toString() || "",
@@ -139,6 +141,7 @@ export default function EditAsset() {
       yearNumber: formData.yearNumber,
       categoryNumber: formData.categoryNumber,
       itemNumber: formData.itemNumber,
+      sequenceNumber: formData.sequenceNumber,
       location: formData.location,
       sublocation: formData.sublocation,
       price: parseFloat(formData.price) || 0,
@@ -217,7 +220,7 @@ export default function EditAsset() {
         {/* Asset Number Components */}
         <div className="rounded-xl bg-card border border-border p-6 shadow-sm space-y-6">
           <h3 className="text-lg font-semibold text-card-foreground">Asset Number Components</h3>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
             <div className="space-y-2">
               <Label htmlFor="officeNumber">Office Number *</Label>
               <Input
@@ -260,9 +263,19 @@ export default function EditAsset() {
               <Label htmlFor="itemNumber">Item Code *</Label>
               <Input
                 id="itemNumber"
-                placeholder="e.g., 001"
+                placeholder="e.g., 03"
                 value={formData.itemNumber}
                 onChange={(e) => updateField("itemNumber", e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sequenceNumber">Sequence Number *</Label>
+              <Input
+                id="sequenceNumber"
+                placeholder="e.g., 01"
+                value={formData.sequenceNumber}
+                onChange={(e) => updateField("sequenceNumber", e.target.value)}
                 required
               />
             </div>
