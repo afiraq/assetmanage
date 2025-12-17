@@ -34,7 +34,7 @@ const App = () => (
             <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
             <Route path="/locations" element={<ProtectedRoute><Locations /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute requireAdmin><Settings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

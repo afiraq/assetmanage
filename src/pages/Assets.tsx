@@ -24,11 +24,13 @@ import { useAssets } from "@/hooks/useAssets";
 import { categories } from "@/data/categories";
 import { useToast } from "@/hooks/use-toast";
 import { AssetBarcode } from "@/components/assets/AssetBarcode";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Assets() {
   const navigate = useNavigate();
   const { assets, exportToCSV, importFromCSV, deleteAsset } = useAssets();
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
@@ -217,14 +219,16 @@ export default function Assets() {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(asset.id, asset.itemName)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(asset.id, asset.itemName)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
