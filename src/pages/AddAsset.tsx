@@ -62,6 +62,16 @@ export default function AddAsset() {
   const [customItemNames, setCustomItemNames] = useState<string[]>([]);
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const [newItemName, setNewItemName] = useState("");
+  const [appUsers, setAppUsers] = useState<{ id: string; name: string }[]>([]);
+
+  // Load users from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem("appUsers");
+    if (stored) {
+      const users = JSON.parse(stored);
+      setAppUsers(users.map((u: { id: string; name: string }) => ({ id: u.id, name: u.name })));
+    }
+  }, []);
 
   // Update asset number when codes change
   useEffect(() => {
@@ -325,12 +335,22 @@ export default function AddAsset() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="assignedTo">Assigned To</Label>
-              <Input
-                id="assignedTo"
-                placeholder="Enter user name"
+              <Select
                 value={formData.assignedTo}
-                onChange={(e) => updateField("assignedTo", e.target.value)}
-              />
+                onValueChange={(value) => updateField("assignedTo", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select user" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">None</SelectItem>
+                  {appUsers.map((user) => (
+                    <SelectItem key={user.id} value={user.name}>
+                      {user.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="space-y-2">
