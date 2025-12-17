@@ -42,6 +42,7 @@ export default function AddAsset() {
     yearNumber: new Date().getFullYear().toString().slice(-2),
     categoryNumber: "",
     itemNumber: "",
+    sequenceNumber: "",
     location: "",
     sublocation: "",
     price: "",
@@ -75,18 +76,13 @@ export default function AddAsset() {
 
   // Update asset number when codes change
   useEffect(() => {
-    if (formData.officeNumber && formData.yearNumber && formData.categoryNumber && formData.itemNumber) {
-      const assetNum = generateAssetNumber(
-        formData.officeNumber,
-        formData.yearNumber,
-        formData.categoryNumber,
-        formData.itemNumber
-      );
+    if (formData.officeNumber && formData.yearNumber && formData.categoryNumber && formData.itemNumber && formData.sequenceNumber) {
+      const assetNum = `${formData.officeNumber}-${formData.yearNumber}-${formData.categoryNumber}-${formData.itemNumber}-${formData.sequenceNumber}`;
       setGeneratedAssetNumber(assetNum);
     } else {
       setGeneratedAssetNumber("");
     }
-  }, [formData.officeNumber, formData.yearNumber, formData.categoryNumber, formData.itemNumber, generateAssetNumber]);
+  }, [formData.officeNumber, formData.yearNumber, formData.categoryNumber, formData.itemNumber, formData.sequenceNumber]);
 
   // Update subcategories when category changes
   useEffect(() => {
@@ -147,7 +143,7 @@ export default function AddAsset() {
       yearNumber: formData.yearNumber,
       categoryNumber: formData.categoryNumber,
       itemNumber: formData.itemNumber,
-      sequenceNumber: generatedAssetNumber.split("-").pop() || "01",
+      sequenceNumber: formData.sequenceNumber,
       location: formData.location,
       sublocation: formData.sublocation,
       price: parseFloat(formData.price) || 0,
@@ -196,7 +192,7 @@ export default function AddAsset() {
         {/* Asset Number Components */}
         <div className="rounded-xl bg-card border border-border p-6 shadow-sm space-y-6">
           <h3 className="text-lg font-semibold text-card-foreground">Asset Number Components</h3>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
             <div className="space-y-2">
               <Label htmlFor="officeNumber">Office Number *</Label>
               <Input
@@ -239,9 +235,19 @@ export default function AddAsset() {
               <Label htmlFor="itemNumber">Item Code *</Label>
               <Input
                 id="itemNumber"
-                placeholder="e.g., 01"
+                placeholder="e.g., 03"
                 value={formData.itemNumber}
                 onChange={(e) => updateField("itemNumber", e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sequenceNumber">Sequence Number *</Label>
+              <Input
+                id="sequenceNumber"
+                placeholder="e.g., 01"
+                value={formData.sequenceNumber}
+                onChange={(e) => updateField("sequenceNumber", e.target.value)}
                 required
               />
             </div>
