@@ -26,11 +26,12 @@ import { categories } from "@/data/categories";
 import { Asset } from "@/types/asset";
 import { useToast } from "@/hooks/use-toast";
 import { useStaff } from "@/hooks/useStaff";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AddAsset() {
   const navigate = useNavigate();
   const { addAsset, locations, generateAssetNumber } = useAssets();
-  const { activeStaff } = useStaff();
+  const { activeStaff, isLoading: staffLoading } = useStaff();
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -324,23 +325,27 @@ export default function AddAsset() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="assignedTo">Assigned To</Label>
-              <Select
-                value={formData.assignedTo}
-                onValueChange={(value) => updateField("assignedTo", value === "__none__" ? "" : value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select staff member" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">Not Assigned</SelectItem>
-                  {activeStaff.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.name}
-                      {member.department && ` (${member.department})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {staffLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : (
+                <Select
+                  value={formData.assignedTo}
+                  onValueChange={(value) => updateField("assignedTo", value === "__none__" ? "" : value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select staff member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Not Assigned</SelectItem>
+                    {activeStaff.map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name}
+                        {member.department && ` (${member.department})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
           <div className="space-y-2">
