@@ -237,22 +237,13 @@ export default function AddAsset() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="itemNumber">Item Code *</Label>
-              <Select
+              <Input
+                id="itemNumber"
+                placeholder="e.g., 01"
                 value={formData.itemNumber}
-                onValueChange={(value) => updateField("itemNumber", value)}
-                disabled={subcategories.length === 0}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={subcategories.length === 0 ? "Select category first" : "Select item"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {subcategories.map((sub) => (
-                    <SelectItem key={sub.code} value={sub.code}>
-                      {sub.code} - {sub.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => updateField("itemNumber", e.target.value)}
+                required
+              />
             </div>
           </div>
         </div>
@@ -335,22 +326,12 @@ export default function AddAsset() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="assignedTo">Assigned To</Label>
-              <Select
-                value={formData.assignedTo || "__none__"}
-                onValueChange={(value) => updateField("assignedTo", value === "__none__" ? "" : value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select user" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">None</SelectItem>
-                  {appUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.name}>
-                      {user.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                id="assignedTo"
+                placeholder="Enter name"
+                value={formData.assignedTo}
+                onChange={(e) => updateField("assignedTo", e.target.value)}
+              />
             </div>
           </div>
           <div className="space-y-2">
