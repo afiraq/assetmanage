@@ -112,7 +112,45 @@ serve(async (req) => {
           .eq("user_id", userId);
       }
 
+      // Update profiles table as well
+      if (email || fullName) {
+        const profileUpdates: any = {};
+        if (email) profileUpdates.email = email;
+        if (fullName) profileUpdates.full_name = fullName;
+        profileUpdates.updated_at = new Date().toISOString();
+        
+        await supabaseAdmin
+          .from("profiles")
+          .update(profileUpdates)
+          .eq("id", userId);
+      }
+
       return new Response(JSON.stringify({ success: true, user: updatedUser.user }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "reset_password") {
+      if (!password || password.length < 6) {
+        return new Response(JSON.stringify({ error: "Password must be at least 6 characters" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: updatedUser, error: resetError } = await supabaseAdmin.auth.admin.updateUserById(
+        userId,
+        { password }
+      );
+
+      if (resetError) {
+        return new Response(JSON.stringify({ error: resetError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, message: "Password reset successfully" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
