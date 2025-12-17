@@ -1,15 +1,47 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight, FolderTree, Plus } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { categories } from "@/data/categories";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { categories as defaultCategories } from "@/data/categories";
 import { cn } from "@/lib/utils";
 import { useAssets } from "@/hooks/useAssets";
+import { useToast } from "@/hooks/use-toast";
+import { Category } from "@/types/asset";
 
 export default function Categories() {
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newCategoryCode, setNewCategoryCode] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState("");
   const { assets } = useAssets();
+  const { toast } = useToast();
+
+  // Load categories from localStorage or use defaults
+  useEffect(() => {
+    const stored = localStorage.getItem("categories");
+    if (stored) {
+      setCategoriesList(JSON.parse(stored));
+    } else {
+      setCategoriesList(defaultCategories);
+    }
+  }, []);
+
+  // Save categories to localStorage
+  const saveCategories = (cats: Category[]) => {
+    localStorage.setItem("categories", JSON.stringify(cats));
+    setCategoriesList(cats);
+  };
 
   const toggleCategory = (id: string) => {
     setExpandedCategories((prev) =>
@@ -27,15 +59,52 @@ export default function Categories() {
     ).length;
   };
 
+  const handleAddCategory = () => {
+    if (!newCategoryCode.trim() || !newCategoryName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter both category code and name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if code already exists
+    if (categoriesList.some(c => c.code === newCategoryCode.trim())) {
+      toast({
+        title: "Duplicate Code",
+        description: "A category with this code already exists.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newCategory: Category = {
+      id: crypto.randomUUID(),
+      code: newCategoryCode.trim().padStart(2, '0'),
+      name: newCategoryName.trim(),
+      subcategories: [],
+    };
+
+    saveCategories([...categoriesList, newCategory]);
+    setNewCategoryCode("");
+    setNewCategoryName("");
+    setIsAddDialogOpen(false);
+    toast({
+      title: "Category Added",
+      description: `Category "${newCategoryName}" has been created.`,
+    });
+  };
+
   return (
     <MainLayout title="Categories" subtitle="Browse asset categories and items">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <p className="text-sm text-muted-foreground">
-            {categories.length} categories with {categories.reduce((sum, c) => sum + c.subcategories.length, 0)} item types
+            {categoriesList.length} categories with {categoriesList.reduce((sum, c) => sum + c.subcategories.length, 0)} item types
           </p>
-          <Button>
+          <Button onClick={() => setIsAddDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Category
           </Button>
@@ -43,7 +112,7 @@ export default function Categories() {
 
         {/* Categories List */}
         <div className="space-y-3">
-          {categories.map((category) => {
+          {categoriesList.map((category) => {
             const isExpanded = expandedCategories.includes(category.id);
             const assetCount = getCategoryAssetCount(category.code);
 
@@ -125,6 +194,43 @@ export default function Categories() {
           })}
         </div>
       </div>
+
+      {/* Add Category Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="categoryCode">Category Code</Label>
+              <Input
+                id="categoryCode"
+                placeholder="e.g., 08"
+                value={newCategoryCode}
+                onChange={(e) => setNewCategoryCode(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="categoryName">Category Name</Label>
+              <Input
+                id="categoryName"
+                placeholder="e.g., Electronics"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddCategory} disabled={!newCategoryCode.trim() || !newCategoryName.trim()}>
+              Add Category
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
