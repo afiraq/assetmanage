@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Save, ArrowLeft, Barcode } from "lucide-react";
+import { Save, ArrowLeft, Barcode, Plus } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useAssets } from "@/hooks/useAssets";
 import { categories, getSubcategoryByCode } from "@/data/categories";
 import { useToast } from "@/hooks/use-toast";
@@ -52,6 +59,9 @@ export default function EditAsset() {
 
   const [subcategories, setSubcategories] = useState<{ code: string; name: string }[]>([]);
   const [sublocations, setSublocations] = useState<string[]>([]);
+  const [customItemNames, setCustomItemNames] = useState<string[]>([]);
+  const [showAddItemDialog, setShowAddItemDialog] = useState(false);
+  const [newItemName, setNewItemName] = useState("");
 
   // Load asset data when found
   useEffect(() => {
@@ -140,6 +150,24 @@ export default function EditAsset() {
   const updateField = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  const handleAddCustomItem = () => {
+    if (newItemName.trim()) {
+      setCustomItemNames((prev) => [...prev, newItemName.trim()]);
+      updateField("itemName", newItemName.trim());
+      setNewItemName("");
+      setShowAddItemDialog(false);
+      toast({
+        title: "Item Added",
+        description: `"${newItemName.trim()}" has been added to the list.`,
+      });
+    }
+  };
+
+  const allItemNames = [
+    ...subcategories.map((sub) => sub.name),
+    ...customItemNames,
+  ];
 
   if (!asset) {
     return (
@@ -243,22 +271,35 @@ export default function EditAsset() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="itemName">Item Name *</Label>
-              <Select
-                value={formData.itemName}
-                onValueChange={(value) => updateField("itemName", value)}
-                disabled={subcategories.length === 0}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={subcategories.length === 0 ? "Select category first" : "Select item name"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {subcategories.map((sub) => (
-                    <SelectItem key={sub.code} value={sub.name}>
-                      {sub.name}
+              <div className="flex gap-2">
+                <Select
+                  value={formData.itemName}
+                  onValueChange={(value) => {
+                    if (value === "__add_new__") {
+                      setShowAddItemDialog(true);
+                    } else {
+                      updateField("itemName", value);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder={subcategories.length === 0 && customItemNames.length === 0 ? "Select category first" : "Select item name"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allItemNames.map((name, index) => (
+                      <SelectItem key={`${name}-${index}`} value={name}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__add_new__" className="text-primary">
+                      <span className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        Add New Item
+                      </span>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="brand">Brand</Label>
@@ -459,6 +500,41 @@ export default function EditAsset() {
           </Button>
         </div>
       </form>
+
+      {/* Add New Item Dialog */}
+      <Dialog open={showAddItemDialog} onOpenChange={setShowAddItemDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Item Name</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="newItemName">Item Name</Label>
+              <Input
+                id="newItemName"
+                placeholder="Enter new item name"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddCustomItem();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddItemDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddCustomItem} disabled={!newItemName.trim()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Item
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
