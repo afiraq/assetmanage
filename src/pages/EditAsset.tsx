@@ -217,22 +217,13 @@ export default function EditAsset() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="itemNumber">Item Code *</Label>
-              <Select
+              <Input
+                id="itemNumber"
+                placeholder="e.g., 001"
                 value={formData.itemNumber}
-                onValueChange={(value) => updateField("itemNumber", value)}
-                disabled={subcategories.length === 0}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={subcategories.length === 0 ? "Select category first" : "Select item"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {subcategories.map((sub) => (
-                    <SelectItem key={sub.code} value={sub.code}>
-                      {sub.code} - {sub.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => updateField("itemNumber", e.target.value)}
+                required
+              />
             </div>
           </div>
         </div>
@@ -252,13 +243,22 @@ export default function EditAsset() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="itemName">Item Name *</Label>
-              <Input
-                id="itemName"
-                placeholder="Enter item name"
+              <Select
                 value={formData.itemName}
-                onChange={(e) => updateField("itemName", e.target.value)}
-                required
-              />
+                onValueChange={(value) => updateField("itemName", value)}
+                disabled={subcategories.length === 0}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={subcategories.length === 0 ? "Select category first" : "Select item name"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {subcategories.map((sub) => (
+                    <SelectItem key={sub.code} value={sub.name}>
+                      {sub.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="brand">Brand</Label>
