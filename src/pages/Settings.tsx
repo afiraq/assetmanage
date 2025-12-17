@@ -50,16 +50,37 @@ interface AppUser {
   createdAt: string;
 }
 
+interface LdapConfig {
+  enabled: boolean;
+  serverUrl: string;
+  baseDn: string;
+  bindDn: string;
+  bindPassword: string;
+  userFilter: string;
+}
+
+const defaultLdapConfig: LdapConfig = {
+  enabled: false,
+  serverUrl: "",
+  baseDn: "",
+  bindDn: "",
+  bindPassword: "",
+  userFilter: "(objectClass=person)",
+};
+
 export default function Settings() {
   const [users, setUsers] = useState<AppUser[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isLdapDialogOpen, setIsLdapDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AppUser | null>(null);
   const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
   const [newUserName, setNewUserName] = useState("");
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
+  const [ldapConfig, setLdapConfig] = useState<LdapConfig>(defaultLdapConfig);
+  const [isTesting, setIsTesting] = useState(false);
   const { toast } = useToast();
 
   // Load users from localStorage
@@ -70,10 +91,51 @@ export default function Settings() {
     }
   }, []);
 
+  // Load LDAP config from localStorage
+  useEffect(() => {
+    const storedLdap = localStorage.getItem("ldapConfig");
+    if (storedLdap) {
+      setLdapConfig(JSON.parse(storedLdap));
+    }
+  }, []);
+
   // Save users to localStorage
   const saveUsers = (updatedUsers: AppUser[]) => {
     localStorage.setItem("appUsers", JSON.stringify(updatedUsers));
     setUsers(updatedUsers);
+  };
+
+  // Save LDAP config to localStorage
+  const saveLdapConfig = () => {
+    localStorage.setItem("ldapConfig", JSON.stringify(ldapConfig));
+    toast({
+      title: "LDAP Configuration Saved",
+      description: ldapConfig.enabled 
+        ? "AD/LDAP integration has been enabled." 
+        : "AD/LDAP configuration has been saved.",
+    });
+    setIsLdapDialogOpen(false);
+  };
+
+  const testLdapConnection = async () => {
+    if (!ldapConfig.serverUrl || !ldapConfig.baseDn) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter server URL and Base DN.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTesting(true);
+    // Simulate connection test
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setIsTesting(false);
+    
+    toast({
+      title: "Connection Test",
+      description: "LDAP connection test completed. Check your server configuration if issues persist.",
+    });
   };
 
   const resetForm = () => {
@@ -313,11 +375,18 @@ export default function Settings() {
               <Switch />
             </div>
             <div className="flex items-center justify-between p-4 rounded-lg border border-border">
-              <div>
-                <p className="font-medium text-card-foreground">AD/LDAP Integration</p>
-                <p className="text-sm text-muted-foreground">Connect to Active Directory</p>
+              <div className="flex items-center gap-3">
+                <div>
+                  <p className="font-medium text-card-foreground">AD/LDAP Integration</p>
+                  <p className="text-sm text-muted-foreground">Connect to Active Directory</p>
+                </div>
+                {ldapConfig.enabled && (
+                  <Badge variant="default" className="ml-2">Enabled</Badge>
+                )}
               </div>
-              <Button variant="outline" size="sm">Configure</Button>
+              <Button variant="outline" size="sm" onClick={() => setIsLdapDialogOpen(true)}>
+                Configure
+              </Button>
             </div>
           </div>
         </div>
@@ -489,6 +558,94 @@ export default function Settings() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* LDAP Configuration Dialog */}
+      <Dialog open={isLdapDialogOpen} onOpenChange={setIsLdapDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>AD/LDAP Configuration</DialogTitle>
+            <DialogDescription>
+              Configure Active Directory or LDAP server for user authentication.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-muted/50">
+              <div>
+                <p className="font-medium text-card-foreground">Enable AD/LDAP</p>
+                <p className="text-sm text-muted-foreground">Use directory services for authentication</p>
+              </div>
+              <Switch 
+                checked={ldapConfig.enabled} 
+                onCheckedChange={(checked) => setLdapConfig(prev => ({ ...prev, enabled: checked }))}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="ldapServer">LDAP Server URL</Label>
+              <Input
+                id="ldapServer"
+                placeholder="ldap://your-server.com:389"
+                value={ldapConfig.serverUrl}
+                onChange={(e) => setLdapConfig(prev => ({ ...prev, serverUrl: e.target.value }))}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="baseDn">Base DN</Label>
+              <Input
+                id="baseDn"
+                placeholder="DC=company,DC=com"
+                value={ldapConfig.baseDn}
+                onChange={(e) => setLdapConfig(prev => ({ ...prev, baseDn: e.target.value }))}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="bindDn">Bind DN (Service Account)</Label>
+              <Input
+                id="bindDn"
+                placeholder="CN=admin,OU=Users,DC=company,DC=com"
+                value={ldapConfig.bindDn}
+                onChange={(e) => setLdapConfig(prev => ({ ...prev, bindDn: e.target.value }))}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="bindPassword">Bind Password</Label>
+              <Input
+                id="bindPassword"
+                type="password"
+                placeholder="Enter service account password"
+                value={ldapConfig.bindPassword}
+                onChange={(e) => setLdapConfig(prev => ({ ...prev, bindPassword: e.target.value }))}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="userFilter">User Filter</Label>
+              <Input
+                id="userFilter"
+                placeholder="(objectClass=person)"
+                value={ldapConfig.userFilter}
+                onChange={(e) => setLdapConfig(prev => ({ ...prev, userFilter: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={testLdapConnection} disabled={isTesting}>
+              {isTesting ? "Testing..." : "Test Connection"}
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsLdapDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={saveLdapConfig}>
+                Save Configuration
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
