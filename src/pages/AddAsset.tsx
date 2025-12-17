@@ -53,6 +53,7 @@ export default function AddAsset() {
     tagAttached: false,
     quantity: "1",
     comments: "",
+    assignedTo: "",
   });
 
   const [generatedAssetNumber, setGeneratedAssetNumber] = useState("");
@@ -148,6 +149,7 @@ export default function AddAsset() {
       tagAttached: formData.tagAttached,
       quantity: parseInt(formData.quantity) || 1,
       comments: formData.comments,
+      assignedTo: formData.assignedTo,
       createdAt: new Date().toISOString(),
     };
 
@@ -319,6 +321,15 @@ export default function AddAsset() {
                 value={formData.quantity}
                 onChange={(e) => updateField("quantity", e.target.value)}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="assignedTo">Assigned To</Label>
+              <Input
+                id="assignedTo"
+                placeholder="Enter user name"
+                value={formData.assignedTo}
+                onChange={(e) => updateField("assignedTo", e.target.value)}
               />
             </div>
           </div>
