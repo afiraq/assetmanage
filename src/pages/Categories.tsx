@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, FolderTree, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, FolderTree, Plus, Pencil, Trash2 } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,18 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { categories as defaultCategories } from "@/data/categories";
 import { cn } from "@/lib/utils";
 import { useAssets } from "@/hooks/useAssets";
@@ -22,8 +33,12 @@ export default function Categories() {
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
   const [categoriesList, setCategoriesList] = useState<Category[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [newCategoryCode, setNewCategoryCode] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const { assets } = useAssets();
   const { toast } = useToast();
 
@@ -69,7 +84,6 @@ export default function Categories() {
       return;
     }
 
-    // Check if code already exists
     if (categoriesList.some(c => c.code === newCategoryCode.trim())) {
       toast({
         title: "Duplicate Code",
@@ -93,6 +107,77 @@ export default function Categories() {
     toast({
       title: "Category Added",
       description: `Category "${newCategoryName}" has been created.`,
+    });
+  };
+
+  const handleEditClick = (e: React.MouseEvent, category: Category) => {
+    e.stopPropagation();
+    setEditingCategory(category);
+    setNewCategoryCode(category.code);
+    setNewCategoryName(category.name);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditCategory = () => {
+    if (!editingCategory || !newCategoryCode.trim() || !newCategoryName.trim()) {
+      return;
+    }
+
+    // Check for duplicate code (excluding current category)
+    if (categoriesList.some(c => c.code === newCategoryCode.trim() && c.id !== editingCategory.id)) {
+      toast({
+        title: "Duplicate Code",
+        description: "A category with this code already exists.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updatedCategories = categoriesList.map(c => 
+      c.id === editingCategory.id 
+        ? { ...c, code: newCategoryCode.trim().padStart(2, '0'), name: newCategoryName.trim() }
+        : c
+    );
+
+    saveCategories(updatedCategories);
+    setEditingCategory(null);
+    setNewCategoryCode("");
+    setNewCategoryName("");
+    setIsEditDialogOpen(false);
+    toast({
+      title: "Category Updated",
+      description: `Category has been updated successfully.`,
+    });
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, category: Category) => {
+    e.stopPropagation();
+    setCategoryToDelete(category);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteCategory = () => {
+    if (!categoryToDelete) return;
+
+    const assetCount = getCategoryAssetCount(categoryToDelete.code);
+    if (assetCount > 0) {
+      toast({
+        title: "Cannot Delete",
+        description: `This category has ${assetCount} assets. Remove or reassign them first.`,
+        variant: "destructive",
+      });
+      setIsDeleteDialogOpen(false);
+      setCategoryToDelete(null);
+      return;
+    }
+
+    const updatedCategories = categoriesList.filter(c => c.id !== categoryToDelete.id);
+    saveCategories(updatedCategories);
+    setCategoryToDelete(null);
+    setIsDeleteDialogOpen(false);
+    toast({
+      title: "Category Deleted",
+      description: `Category "${categoryToDelete.name}" has been deleted.`,
     });
   };
 
@@ -122,11 +207,11 @@ export default function Categories() {
                 className="rounded-xl bg-card border border-border shadow-sm overflow-hidden animate-fade-in"
               >
                 {/* Category Header */}
-                <button
-                  onClick={() => toggleCategory(category.id)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
+                <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                  <button
+                    onClick={() => toggleCategory(category.id)}
+                    className="flex items-center gap-4 flex-1"
+                  >
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                       <FolderTree className="h-5 w-5 text-primary" />
                     </div>
@@ -143,18 +228,34 @@ export default function Categories() {
                         {category.subcategories.length} item types
                       </p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3">
+                  </button>
+                  <div className="flex items-center gap-2">
                     <Badge variant="secondary">{assetCount} assets</Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => handleEditClick(e, category)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => handleDeleteClick(e, category)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                     {category.subcategories.length > 0 && (
-                      isExpanded ? (
-                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                      )
+                      <button onClick={() => toggleCategory(category.id)}>
+                        {isExpanded ? (
+                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </button>
                     )}
                   </div>
-                </button>
+                </div>
 
                 {/* Subcategories */}
                 {isExpanded && category.subcategories.length > 0 && (
@@ -231,6 +332,62 @@ export default function Categories() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Category Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Category</DialogTitle>
+            <DialogDescription>Update the category code and name.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editCategoryCode">Category Code</Label>
+              <Input
+                id="editCategoryCode"
+                placeholder="e.g., 08"
+                value={newCategoryCode}
+                onChange={(e) => setNewCategoryCode(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editCategoryName">Category Name</Label>
+              <Input
+                id="editCategoryName"
+                placeholder="e.g., Electronics"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditCategory} disabled={!newCategoryCode.trim() || !newCategoryName.trim()}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{categoryToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCategory} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }
