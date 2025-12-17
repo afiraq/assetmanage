@@ -130,7 +130,10 @@ export default function EditAsset() {
       return;
     }
 
+    const newAssetNumber = `${formData.officeNumber}-${formData.yearNumber}-${formData.categoryNumber}-${formData.itemNumber}-${formData.sequenceNumber}`;
+    
     updateAsset(id, {
+      assetNumber: newAssetNumber,
       sapNumber: formData.sapNumber,
       model: formData.model,
       brand: formData.brand,
@@ -158,7 +161,7 @@ export default function EditAsset() {
 
     toast({
       title: "Asset Updated",
-      description: `Asset ${asset.assetNumber} has been updated successfully.`,
+      description: `Asset ${newAssetNumber} has been updated successfully.`,
     });
     navigate("/assets");
   };
@@ -202,16 +205,16 @@ export default function EditAsset() {
   return (
     <MainLayout title="Edit Asset" subtitle="Modify asset details">
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Asset Number Preview (Read-only) */}
+        {/* Asset Number Preview */}
         <div className="rounded-xl bg-card border border-border p-6 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-xl gradient-primary">
               <Barcode className="h-7 w-7 text-primary-foreground" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Asset Number (Read-only)</p>
+              <p className="text-sm text-muted-foreground">Asset Number (Preview)</p>
               <p className="text-2xl font-mono font-bold text-card-foreground">
-                {asset.assetNumber}
+                {`${formData.officeNumber}-${formData.yearNumber}-${formData.categoryNumber}-${formData.itemNumber}-${formData.sequenceNumber}`}
               </p>
             </div>
           </div>
