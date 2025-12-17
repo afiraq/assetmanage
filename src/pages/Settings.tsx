@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { User, Shield, Bell, Database, Users, Plus, Pencil, Trash2 } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -127,15 +128,57 @@ export default function Settings() {
       return;
     }
 
+    if (!ldapConfig.bindDn || !ldapConfig.bindPassword) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter Bind DN and password for connection test.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsTesting(true);
-    // Simulate connection test
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsTesting(false);
     
-    toast({
-      title: "Connection Test",
-      description: "LDAP connection test completed. Check your server configuration if issues persist.",
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke('ldap-auth', {
+        body: {
+          action: 'test',
+          serverUrl: ldapConfig.serverUrl,
+          baseDn: ldapConfig.baseDn,
+          bindDn: ldapConfig.bindDn,
+          bindPassword: ldapConfig.bindPassword,
+          userFilter: ldapConfig.userFilter,
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "Connection Failed",
+          description: error.message || "Failed to connect to LDAP server.",
+          variant: "destructive",
+        });
+      } else if (data?.success) {
+        toast({
+          title: "Connection Successful",
+          description: data.message || "Successfully connected to LDAP server.",
+        });
+      } else {
+        toast({
+          title: "Connection Failed",
+          description: data?.message || "Failed to connect to LDAP server.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      const error = err as Error;
+      toast({
+        title: "Connection Error",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   const resetForm = () => {
