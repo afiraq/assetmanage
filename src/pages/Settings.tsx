@@ -72,7 +72,7 @@ const defaultLdapConfig: LdapConfig = {
 };
 
 export default function Settings() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const { staff, isLoading: staffLoading, addStaff, updateStaff, deleteStaff } = useStaff();
   
   // Staff Management State
@@ -734,16 +734,16 @@ export default function Settings() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" defaultValue="Admin User" />
+              <Input id="fullName" defaultValue={user?.user_metadata?.full_name || ""} disabled />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" defaultValue="admin@company.com" />
+              <Input id="email" type="email" defaultValue={user?.email || ""} disabled />
             </div>
           </div>
-          <div className="mt-4">
-            <Button>Save Changes</Button>
-          </div>
+          <p className="text-sm text-muted-foreground mt-4">
+            Contact an administrator to update your profile information.
+          </p>
         </div>
 
         {/* Security */}
