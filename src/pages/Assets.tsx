@@ -25,14 +25,22 @@ import { categories } from "@/data/categories";
 import { useToast } from "@/hooks/use-toast";
 import { AssetBarcode } from "@/components/assets/AssetBarcode";
 import { useAuth } from "@/contexts/AuthContext";
+import { useStaff } from "@/hooks/useStaff";
 
 export default function Assets() {
   const navigate = useNavigate();
   const { assets, exportToCSV, importFromCSV, deleteAsset } = useAssets();
   const { toast } = useToast();
   const { isAdmin } = useAuth();
+  const { staff } = useStaff();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  const getStaffName = (staffId: string) => {
+    if (!staffId) return "-";
+    const staffMember = staff.find((s) => s.id === staffId);
+    return staffMember?.name || "-";
+  };
 
   const filteredAssets = assets.filter((asset) => {
     const matchesSearch =
@@ -145,6 +153,7 @@ export default function Assets() {
                 <TableHead>Item Name</TableHead>
                 <TableHead>Brand / Model</TableHead>
                 <TableHead>Location</TableHead>
+                <TableHead>Assigned To</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -153,7 +162,7 @@ export default function Assets() {
             <TableBody>
               {filteredAssets.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                     {assets.length === 0 ? (
                       <div className="space-y-2">
                         <p>No assets found</p>
@@ -191,6 +200,9 @@ export default function Assets() {
                           <p className="text-xs text-muted-foreground">{asset.sublocation}</p>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm">{getStaffName(asset.assignedTo)}</p>
                     </TableCell>
                     <TableCell className="font-mono">
                       ${asset.price.toLocaleString()}
