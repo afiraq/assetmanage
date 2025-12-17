@@ -25,10 +25,12 @@ import { useAssets } from "@/hooks/useAssets";
 import { categories } from "@/data/categories";
 import { Asset } from "@/types/asset";
 import { useToast } from "@/hooks/use-toast";
+import { useStaff } from "@/hooks/useStaff";
 
 export default function AddAsset() {
   const navigate = useNavigate();
   const { addAsset, locations, generateAssetNumber } = useAssets();
+  const { activeStaff } = useStaff();
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -63,16 +65,6 @@ export default function AddAsset() {
   const [customItemNames, setCustomItemNames] = useState<string[]>([]);
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const [newItemName, setNewItemName] = useState("");
-  const [appUsers, setAppUsers] = useState<{ id: string; name: string }[]>([]);
-
-  // Load users from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem("appUsers");
-    if (stored) {
-      const users = JSON.parse(stored);
-      setAppUsers(users.map((u: { id: string; name: string }) => ({ id: u.id, name: u.name })));
-    }
-  }, []);
 
   // Update asset number when codes change
   useEffect(() => {
@@ -332,12 +324,23 @@ export default function AddAsset() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="assignedTo">Assigned To</Label>
-              <Input
-                id="assignedTo"
-                placeholder="Enter name"
+              <Select
                 value={formData.assignedTo}
-                onChange={(e) => updateField("assignedTo", e.target.value)}
-              />
+                onValueChange={(value) => updateField("assignedTo", value === "__none__" ? "" : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select staff member" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Not Assigned</SelectItem>
+                  {activeStaff.map((member) => (
+                    <SelectItem key={member.id} value={member.name}>
+                      {member.name}
+                      {member.department && ` (${member.department})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="space-y-2">

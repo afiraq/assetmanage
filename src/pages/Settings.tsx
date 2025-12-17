@@ -27,13 +27,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -42,14 +35,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-
-interface AppUser {
-  id: string;
-  name: string;
-  email: string;
-  role: "admin" | "user";
-  createdAt: string;
-}
+import { useStaff, Staff } from "@/hooks/useStaff";
 
 interface LdapConfig {
   enabled: boolean;
@@ -70,27 +56,25 @@ const defaultLdapConfig: LdapConfig = {
 };
 
 export default function Settings() {
-  const [users, setUsers] = useState<AppUser[]>([]);
+  const { staff, isLoading, addStaff, updateStaff, deleteStaff } = useStaff();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isLdapDialogOpen, setIsLdapDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<AppUser | null>(null);
-  const [userToDelete, setUserToDelete] = useState<AppUser | null>(null);
-  const [newUserName, setNewUserName] = useState("");
-  const [newUserEmail, setNewUserEmail] = useState("");
-  const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
+  const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
+  const [staffToDelete, setStaffToDelete] = useState<Staff | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    employee_id: "",
+    department: "",
+    position: "",
+    is_active: true,
+  });
   const [ldapConfig, setLdapConfig] = useState<LdapConfig>(defaultLdapConfig);
   const [isTesting, setIsTesting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-
-  // Load users from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem("appUsers");
-    if (stored) {
-      setUsers(JSON.parse(stored));
-    }
-  }, []);
 
   // Load LDAP config from localStorage
   useEffect(() => {
@@ -99,12 +83,6 @@ export default function Settings() {
       setLdapConfig(JSON.parse(storedLdap));
     }
   }, []);
-
-  // Save users to localStorage
-  const saveUsers = (updatedUsers: AppUser[]) => {
-    localStorage.setItem("appUsers", JSON.stringify(updatedUsers));
-    setUsers(updatedUsers);
-  };
 
   // Save LDAP config to localStorage
   const saveLdapConfig = () => {
@@ -182,107 +160,134 @@ export default function Settings() {
   };
 
   const resetForm = () => {
-    setNewUserName("");
-    setNewUserEmail("");
-    setNewUserRole("user");
+    setFormData({
+      name: "",
+      email: "",
+      employee_id: "",
+      department: "",
+      position: "",
+      is_active: true,
+    });
   };
 
-  const handleAddUser = () => {
-    if (!newUserName.trim() || !newUserEmail.trim()) {
+  const handleAddStaff = async () => {
+    if (!formData.name.trim()) {
       toast({
         title: "Validation Error",
-        description: "Please enter both name and email.",
+        description: "Please enter a name.",
         variant: "destructive",
       });
       return;
     }
 
-    if (users.some(u => u.email.toLowerCase() === newUserEmail.trim().toLowerCase())) {
+    setIsSaving(true);
+    const { error } = await addStaff({
+      name: formData.name.trim(),
+      email: formData.email.trim() || null,
+      employee_id: formData.employee_id.trim() || null,
+      department: formData.department.trim() || null,
+      position: formData.position.trim() || null,
+      is_active: formData.is_active,
+    });
+
+    setIsSaving(false);
+
+    if (error) {
       toast({
-        title: "Duplicate Email",
-        description: "A user with this email already exists.",
+        title: "Error",
+        description: "Failed to add staff member.",
         variant: "destructive",
       });
       return;
     }
 
-    const newUser: AppUser = {
-      id: crypto.randomUUID(),
-      name: newUserName.trim(),
-      email: newUserEmail.trim().toLowerCase(),
-      role: newUserRole,
-      createdAt: new Date().toISOString(),
-    };
-
-    saveUsers([...users, newUser]);
     resetForm();
     setIsAddDialogOpen(false);
     toast({
-      title: "User Added",
-      description: `${newUserName} has been added successfully.`,
+      title: "Staff Added",
+      description: `${formData.name} has been added successfully.`,
     });
   };
 
-  const handleEditClick = (user: AppUser) => {
-    setEditingUser(user);
-    setNewUserName(user.name);
-    setNewUserEmail(user.email);
-    setNewUserRole(user.role);
+  const handleEditClick = (member: Staff) => {
+    setEditingStaff(member);
+    setFormData({
+      name: member.name,
+      email: member.email || "",
+      employee_id: member.employee_id || "",
+      department: member.department || "",
+      position: member.position || "",
+      is_active: member.is_active,
+    });
     setIsEditDialogOpen(true);
   };
 
-  const handleEditUser = () => {
-    if (!editingUser || !newUserName.trim() || !newUserEmail.trim()) {
+  const handleEditStaff = async () => {
+    if (!editingStaff || !formData.name.trim()) {
       return;
     }
 
-    if (users.some(u => u.email.toLowerCase() === newUserEmail.trim().toLowerCase() && u.id !== editingUser.id)) {
+    setIsSaving(true);
+    const { error } = await updateStaff(editingStaff.id, {
+      name: formData.name.trim(),
+      email: formData.email.trim() || null,
+      employee_id: formData.employee_id.trim() || null,
+      department: formData.department.trim() || null,
+      position: formData.position.trim() || null,
+      is_active: formData.is_active,
+    });
+
+    setIsSaving(false);
+
+    if (error) {
       toast({
-        title: "Duplicate Email",
-        description: "A user with this email already exists.",
+        title: "Error",
+        description: "Failed to update staff member.",
         variant: "destructive",
       });
       return;
     }
 
-    const updatedUsers = users.map(u =>
-      u.id === editingUser.id
-        ? { ...u, name: newUserName.trim(), email: newUserEmail.trim().toLowerCase(), role: newUserRole }
-        : u
-    );
-
-    saveUsers(updatedUsers);
     resetForm();
-    setEditingUser(null);
+    setEditingStaff(null);
     setIsEditDialogOpen(false);
     toast({
-      title: "User Updated",
-      description: "User has been updated successfully.",
+      title: "Staff Updated",
+      description: "Staff member has been updated successfully.",
     });
   };
 
-  const handleDeleteClick = (user: AppUser) => {
-    setUserToDelete(user);
+  const handleDeleteClick = (member: Staff) => {
+    setStaffToDelete(member);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteUser = () => {
-    if (!userToDelete) return;
+  const handleDeleteStaff = async () => {
+    if (!staffToDelete) return;
 
-    const updatedUsers = users.filter(u => u.id !== userToDelete.id);
-    saveUsers(updatedUsers);
-    setUserToDelete(null);
+    const { error } = await deleteStaff(staffToDelete.id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete staff member.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setStaffToDelete(null);
     setIsDeleteDialogOpen(false);
     toast({
-      title: "User Deleted",
-      description: `${userToDelete.name} has been removed.`,
+      title: "Staff Deleted",
+      description: `${staffToDelete.name} has been removed.`,
     });
   };
 
   return (
     <MainLayout title="Settings" subtitle="System configuration and preferences">
       <div className="space-y-6 max-w-4xl">
-        {/* User Management */}
+        {/* Staff Management */}
         <div className="rounded-xl bg-card border border-border p-6 shadow-sm animate-fade-in">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -290,19 +295,23 @@ export default function Settings() {
                 <Users className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-card-foreground">User Management</h3>
-                <p className="text-sm text-muted-foreground">Add and manage system users</p>
+                <h3 className="font-semibold text-card-foreground">Staff Management</h3>
+                <p className="text-sm text-muted-foreground">Add and manage staff for asset assignment</p>
               </div>
             </div>
             <Button onClick={() => setIsAddDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Add User
+              Add Staff
             </Button>
           </div>
 
-          {users.length === 0 ? (
+          {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">
-              No users added yet. Click "Add User" to create one.
+              Loading staff members...
+            </div>
+          ) : staff.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No staff added yet. Click "Add Staff" to create one.
             </div>
           ) : (
             <div className="rounded-lg border border-border overflow-hidden">
@@ -310,19 +319,30 @@ export default function Settings() {
                 <TableHeader>
                   <TableRow className="bg-muted/50">
                     <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
+                    <TableHead>Employee ID</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Position</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
+                  {staff.map((member) => (
+                    <TableRow key={member.id}>
                       <TableCell>
-                        <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                          {user.role}
+                        <div>
+                          <p className="font-medium">{member.name}</p>
+                          {member.email && (
+                            <p className="text-sm text-muted-foreground">{member.email}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{member.employee_id || "-"}</TableCell>
+                      <TableCell>{member.department || "-"}</TableCell>
+                      <TableCell>{member.position || "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant={member.is_active ? "default" : "secondary"}>
+                          {member.is_active ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -330,14 +350,14 @@ export default function Settings() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleEditClick(user)}
+                            onClick={() => handleEditClick(member)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDeleteClick(user)}
+                            onClick={() => handleDeleteClick(member)}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -482,103 +502,153 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Add User Dialog */}
+      {/* Add Staff Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New User</DialogTitle>
-            <DialogDescription>Create a new user for asset assignment.</DialogDescription>
+            <DialogTitle>Add New Staff</DialogTitle>
+            <DialogDescription>Create a new staff member for asset assignment.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="userName">Name</Label>
+              <Label htmlFor="staffName">Name *</Label>
               <Input
-                id="userName"
+                id="staffName"
                 placeholder="Enter full name"
-                value={newUserName}
-                onChange={(e) => setNewUserName(e.target.value)}
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="userEmail">Email</Label>
+              <Label htmlFor="staffEmail">Email</Label>
               <Input
-                id="userEmail"
+                id="staffEmail"
                 type="email"
-                placeholder="Enter email address"
-                value={newUserEmail}
-                onChange={(e) => setNewUserEmail(e.target.value)}
+                placeholder="Enter email address (optional)"
+                value={formData.email}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
               />
             </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="staffEmployeeId">Employee ID</Label>
+                <Input
+                  id="staffEmployeeId"
+                  placeholder="e.g., EMP001"
+                  value={formData.employee_id}
+                  onChange={(e) => setFormData(prev => ({ ...prev, employee_id: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="staffDepartment">Department</Label>
+                <Input
+                  id="staffDepartment"
+                  placeholder="e.g., IT"
+                  value={formData.department}
+                  onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                />
+              </div>
+            </div>
             <div className="space-y-2">
-              <Label htmlFor="userRole">Role</Label>
-              <Select value={newUserRole} onValueChange={(value: "admin" | "user") => setNewUserRole(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="staffPosition">Position</Label>
+              <Input
+                id="staffPosition"
+                placeholder="e.g., Software Engineer"
+                value={formData.position}
+                onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="staffActive"
+                checked={formData.is_active}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+              />
+              <Label htmlFor="staffActive">Active</Label>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { resetForm(); setIsAddDialogOpen(false); }}>
               Cancel
             </Button>
-            <Button onClick={handleAddUser} disabled={!newUserName.trim() || !newUserEmail.trim()}>
-              Add User
+            <Button onClick={handleAddStaff} disabled={!formData.name.trim() || isSaving}>
+              {isSaving ? "Adding..." : "Add Staff"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit User Dialog */}
+      {/* Edit Staff Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>Update user information.</DialogDescription>
+            <DialogTitle>Edit Staff</DialogTitle>
+            <DialogDescription>Update staff member information.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="editUserName">Name</Label>
+              <Label htmlFor="editStaffName">Name *</Label>
               <Input
-                id="editUserName"
+                id="editStaffName"
                 placeholder="Enter full name"
-                value={newUserName}
-                onChange={(e) => setNewUserName(e.target.value)}
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="editUserEmail">Email</Label>
+              <Label htmlFor="editStaffEmail">Email</Label>
               <Input
-                id="editUserEmail"
+                id="editStaffEmail"
                 type="email"
-                placeholder="Enter email address"
-                value={newUserEmail}
-                onChange={(e) => setNewUserEmail(e.target.value)}
+                placeholder="Enter email address (optional)"
+                value={formData.email}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
               />
             </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="editStaffEmployeeId">Employee ID</Label>
+                <Input
+                  id="editStaffEmployeeId"
+                  placeholder="e.g., EMP001"
+                  value={formData.employee_id}
+                  onChange={(e) => setFormData(prev => ({ ...prev, employee_id: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editStaffDepartment">Department</Label>
+                <Input
+                  id="editStaffDepartment"
+                  placeholder="e.g., IT"
+                  value={formData.department}
+                  onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                />
+              </div>
+            </div>
             <div className="space-y-2">
-              <Label htmlFor="editUserRole">Role</Label>
-              <Select value={newUserRole} onValueChange={(value: "admin" | "user") => setNewUserRole(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="editStaffPosition">Position</Label>
+              <Input
+                id="editStaffPosition"
+                placeholder="e.g., Software Engineer"
+                value={formData.position}
+                onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="editStaffActive"
+                checked={formData.is_active}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+              />
+              <Label htmlFor="editStaffActive">Active</Label>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { resetForm(); setEditingUser(null); setIsEditDialogOpen(false); }}>
+            <Button variant="outline" onClick={() => { resetForm(); setEditingStaff(null); setIsEditDialogOpen(false); }}>
               Cancel
             </Button>
-            <Button onClick={handleEditUser} disabled={!newUserName.trim() || !newUserEmail.trim()}>
-              Save Changes
+            <Button onClick={handleEditStaff} disabled={!formData.name.trim() || isSaving}>
+              {isSaving ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -588,14 +658,14 @@ export default function Settings() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogTitle>Delete Staff</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{userToDelete?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{staffToDelete?.name}"? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleDeleteStaff} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

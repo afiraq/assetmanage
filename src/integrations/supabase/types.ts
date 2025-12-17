@@ -38,6 +38,39 @@ export type Database = {
         }
         Relationships: []
       }
+      staff: {
+        Row: {
+          created_at: string
+          department: string | null
+          email: string | null
+          employee_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          position: string | null
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          employee_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          position?: string | null
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          email?: string | null
+          employee_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          position?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
