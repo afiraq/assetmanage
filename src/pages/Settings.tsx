@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useStaff, Staff } from "@/hooks/useStaff";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SystemUser {
   id: string;
@@ -71,6 +72,7 @@ const defaultLdapConfig: LdapConfig = {
 };
 
 export default function Settings() {
+  const { isAdmin } = useAuth();
   const { staff, isLoading: staffLoading, addStaff, updateStaff, deleteStaff } = useStaff();
   
   // Staff Management State
@@ -133,8 +135,10 @@ export default function Settings() {
   };
 
   useEffect(() => {
-    loadSystemUsers();
-  }, []);
+    if (isAdmin) {
+      loadSystemUsers();
+    }
+  }, [isAdmin]);
 
   // Load LDAP config from localStorage
   useEffect(() => {
@@ -549,7 +553,8 @@ export default function Settings() {
   return (
     <MainLayout title="Settings" subtitle="System configuration and preferences">
       <div className="space-y-6 max-w-4xl">
-        {/* System Users (Login Users) */}
+        {/* System Users (Login Users) - Admin Only */}
+        {isAdmin && (
         <div className="rounded-xl bg-card border border-border p-6 shadow-sm animate-fade-in">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -629,6 +634,7 @@ export default function Settings() {
             </div>
           )}
         </div>
+        )}
 
         {/* Staff Management */}
         <div className="rounded-xl bg-card border border-border p-6 shadow-sm animate-fade-in">
