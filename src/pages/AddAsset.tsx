@@ -214,7 +214,7 @@ export default function AddAsset() {
                 value={formData.categoryNumber}
                 onValueChange={(value) => updateField("categoryNumber", value)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="categoryNumber">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -268,7 +268,7 @@ export default function AddAsset() {
                 value={formData.itemName}
                 onValueChange={handleItemNameChange}
               >
-                <SelectTrigger>
+                <SelectTrigger id="itemName">
                   <SelectValue placeholder="Select item name" />
                 </SelectTrigger>
                 <SelectContent>
@@ -334,7 +334,7 @@ export default function AddAsset() {
                   value={formData.assignedTo}
                   onValueChange={(value) => updateField("assignedTo", value === "__none__" ? "" : value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="assignedTo">
                     <SelectValue placeholder="Select staff member" />
                   </SelectTrigger>
                   <SelectContent>
@@ -373,7 +373,7 @@ export default function AddAsset() {
                   value={formData.location}
                   onValueChange={(value) => updateField("location", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="location">
                     <SelectValue placeholder="Select location" />
                   </SelectTrigger>
                   <SelectContent>
@@ -392,7 +392,7 @@ export default function AddAsset() {
                   onValueChange={(value) => updateField("sublocation", value)}
                   disabled={sublocations.length === 0}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="sublocation">
                     <SelectValue placeholder={sublocations.length === 0 ? "Select location first" : "Select sublocation"} />
                   </SelectTrigger>
                   <SelectContent>

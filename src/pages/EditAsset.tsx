@@ -255,7 +255,7 @@ export default function EditAsset() {
                 value={formData.categoryNumber}
                 onValueChange={(value) => updateField("categoryNumber", value)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="categoryNumber">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -316,7 +316,7 @@ export default function EditAsset() {
                     }
                   }}
                 >
-                  <SelectTrigger className="flex-1">
+                  <SelectTrigger id="itemName" className="flex-1">
                     <SelectValue placeholder={subcategories.length === 0 && customItemNames.length === 0 ? "Select category first" : "Select item name"} />
                   </SelectTrigger>
                   <SelectContent>
@@ -383,7 +383,7 @@ export default function EditAsset() {
                   value={formData.assignedTo || "__none__"}
                   onValueChange={(value) => updateField("assignedTo", value === "__none__" ? "" : value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="assignedTo">
                     <SelectValue placeholder="Select staff member" />
                   </SelectTrigger>
                   <SelectContent>
@@ -422,7 +422,7 @@ export default function EditAsset() {
                   value={formData.location}
                   onValueChange={(value) => updateField("location", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="location">
                     <SelectValue placeholder="Select location" />
                   </SelectTrigger>
                   <SelectContent>
@@ -441,7 +441,7 @@ export default function EditAsset() {
                   onValueChange={(value) => updateField("sublocation", value)}
                   disabled={sublocations.length === 0}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="sublocation">
                     <SelectValue placeholder={sublocations.length === 0 ? "Select location first" : "Select sublocation"} />
                   </SelectTrigger>
                   <SelectContent>
