@@ -273,18 +273,32 @@ export function useAssets() {
     return `${prefix}-${nextSequence}`;
   };
 
+  const escapeCSVValue = (value: unknown): string => {
+    if (value === null || value === undefined) return "";
+    const str = String(value);
+    if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
   const exportToCSV = () => {
     if (assets.length === 0) return;
 
-    const headers = Object.keys(assets[0]).join(",");
-    const rows = assets.map((asset) =>
-      Object.values(asset)
-        .map((value) => `"${value}"`)
-        .join(",")
-    );
-    const csv = [headers, ...rows].join("\n");
+    const headers = [
+      "assetNumber", "sapNumber", "itemName", "brand", "model", "serial",
+      "specification", "officeNumber", "yearNumber", "categoryNumber",
+      "itemNumber", "sequenceNumber", "location", "sublocation", "price",
+      "accruedDate", "purchaseCode", "voucherNumber", "deductedAfterAuction",
+      "auctionedDate", "tagAttached", "quantity", "comments", "assignedTo"
+    ];
 
-    const blob = new Blob([csv], { type: "text/csv" });
+    const rows = assets.map((asset) =>
+      headers.map((header) => escapeCSVValue(asset[header as keyof Asset])).join(",")
+    );
+    const csv = [headers.join(","), ...rows].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -293,26 +307,91 @@ export function useAssets() {
     URL.revokeObjectURL(url);
   };
 
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (inQuotes) {
+        if (char === '"' && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = false;
+        } else {
+          current += char;
+        }
+      } else {
+        if (char === '"') {
+          inQuotes = true;
+        } else if (char === ",") {
+          result.push(current);
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+    }
+    result.push(current);
+    return result;
+  };
+
   const importFromCSV = async (file: File) => {
     return new Promise<void>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
           const text = e.target?.result as string;
-          const lines = text.split("\n");
-          const headers = lines[0].split(",");
+          const lines = text.split(/\r?\n/);
+          const headers = parseCSVLine(lines[0]).map(h => h.trim());
+
+          const generateUUID = () => {
+            if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+              return crypto.randomUUID();
+            }
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+              const r = Math.random() * 16 | 0;
+              const v = c === 'x' ? r : (r & 0x3 | 0x8);
+              return v.toString(16);
+            });
+          };
 
           const importedAssets: Asset[] = lines
             .slice(1)
             .filter((line) => line.trim())
             .map((line) => {
-              const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-              const asset: Record<string, string | number | boolean> = {};
+              const values = parseCSVLine(line);
+              const asset: Record<string, unknown> = {};
 
               headers.forEach((header, index) => {
-                const value = values[index]?.replace(/^"|"$/g, "") || "";
-                asset[header.trim()] = value;
+                const value = values[index]?.trim() || "";
+                
+                // Handle boolean fields
+                if (header === "deductedAfterAuction" || header === "tagAttached") {
+                  asset[header] = value.toLowerCase() === "true";
+                }
+                // Handle numeric fields
+                else if (header === "price") {
+                  asset[header] = parseFloat(value) || 0;
+                }
+                else if (header === "quantity") {
+                  asset[header] = parseInt(value) || 1;
+                }
+                // Handle null date fields
+                else if (header === "auctionedDate") {
+                  asset[header] = value && value !== "null" && value !== "" ? value : null;
+                }
+                // Skip id and createdAt - generate new ones
+                else if (header !== "id" && header !== "createdAt") {
+                  asset[header] = value;
+                }
               });
+
+              // Always generate new id and createdAt for imports
+              asset.id = generateUUID();
+              asset.createdAt = new Date().toISOString();
 
               return asset as unknown as Asset;
             });
@@ -323,7 +402,8 @@ export function useAssets() {
           }
 
           resolve();
-        } catch {
+        } catch (err) {
+          console.error("CSV import error:", err);
           reject(new Error("Failed to parse CSV file"));
         }
       };
