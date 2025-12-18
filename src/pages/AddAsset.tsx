@@ -111,7 +111,7 @@ export default function AddAsset() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!generatedAssetNumber) {
@@ -152,12 +152,14 @@ export default function AddAsset() {
       createdAt: new Date().toISOString(),
     };
 
-    addAsset(newAsset);
-    toast({
-      title: "Asset Added",
-      description: `Asset ${generatedAssetNumber} has been created successfully.`,
-    });
-    navigate("/assets");
+    const { error } = await addAsset(newAsset);
+    if (!error) {
+      toast({
+        title: "Asset Added",
+        description: `Asset ${generatedAssetNumber} has been created successfully.`,
+      });
+      navigate("/assets");
+    }
   };
 
   const updateField = (field: string, value: string | boolean) => {

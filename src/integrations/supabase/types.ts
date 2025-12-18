@@ -14,6 +14,125 @@ export type Database = {
   }
   public: {
     Tables: {
+      assets: {
+        Row: {
+          accrued_date: string | null
+          asset_number: string
+          assigned_to: string | null
+          auctioned_date: string | null
+          brand: string | null
+          category_number: string | null
+          comments: string | null
+          created_at: string
+          deducted_after_auction: boolean | null
+          id: string
+          item_name: string
+          item_number: string | null
+          location: string | null
+          model: string | null
+          office_number: string | null
+          price: number | null
+          purchase_code: string | null
+          quantity: number | null
+          sap_number: string | null
+          sequence_number: string | null
+          serial: string | null
+          specification: string | null
+          sublocation: string | null
+          tag_attached: boolean | null
+          updated_at: string
+          voucher_number: string | null
+          year_number: string | null
+        }
+        Insert: {
+          accrued_date?: string | null
+          asset_number: string
+          assigned_to?: string | null
+          auctioned_date?: string | null
+          brand?: string | null
+          category_number?: string | null
+          comments?: string | null
+          created_at?: string
+          deducted_after_auction?: boolean | null
+          id?: string
+          item_name: string
+          item_number?: string | null
+          location?: string | null
+          model?: string | null
+          office_number?: string | null
+          price?: number | null
+          purchase_code?: string | null
+          quantity?: number | null
+          sap_number?: string | null
+          sequence_number?: string | null
+          serial?: string | null
+          specification?: string | null
+          sublocation?: string | null
+          tag_attached?: boolean | null
+          updated_at?: string
+          voucher_number?: string | null
+          year_number?: string | null
+        }
+        Update: {
+          accrued_date?: string | null
+          asset_number?: string
+          assigned_to?: string | null
+          auctioned_date?: string | null
+          brand?: string | null
+          category_number?: string | null
+          comments?: string | null
+          created_at?: string
+          deducted_after_auction?: boolean | null
+          id?: string
+          item_name?: string
+          item_number?: string | null
+          location?: string | null
+          model?: string | null
+          office_number?: string | null
+          price?: number | null
+          purchase_code?: string | null
+          quantity?: number | null
+          sap_number?: string | null
+          sequence_number?: string | null
+          serial?: string | null
+          specification?: string | null
+          sublocation?: string | null
+          tag_attached?: boolean | null
+          updated_at?: string
+          voucher_number?: string | null
+          year_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assets_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sublocations: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sublocations?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sublocations?: string[] | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null

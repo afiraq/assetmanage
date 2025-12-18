@@ -1,77 +1,264 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Asset, Location } from "@/types/asset";
+import { useToast } from "@/hooks/use-toast";
 
-const STORAGE_KEY = "asset_management_assets";
-const LOCATIONS_KEY = "asset_management_locations";
+// Helper to convert snake_case DB row to camelCase Asset
+const dbRowToAsset = (row: any): Asset => ({
+  id: row.id,
+  assetNumber: row.asset_number || "",
+  sapNumber: row.sap_number || "",
+  model: row.model || "",
+  brand: row.brand || "",
+  serial: row.serial || "",
+  specification: row.specification || "",
+  itemName: row.item_name || "",
+  officeNumber: row.office_number || "",
+  yearNumber: row.year_number || "",
+  categoryNumber: row.category_number || "",
+  itemNumber: row.item_number || "",
+  sequenceNumber: row.sequence_number || "",
+  location: row.location || "",
+  sublocation: row.sublocation || "",
+  price: Number(row.price) || 0,
+  accruedDate: row.accrued_date || "",
+  purchaseCode: row.purchase_code || "",
+  voucherNumber: row.voucher_number || "",
+  deductedAfterAuction: row.deducted_after_auction || false,
+  auctionedDate: row.auctioned_date || null,
+  tagAttached: row.tag_attached || false,
+  quantity: row.quantity || 1,
+  comments: row.comments || "",
+  assignedTo: row.assigned_to || "",
+  createdAt: row.created_at || new Date().toISOString(),
+});
+
+// Helper to convert camelCase Asset to snake_case for DB
+const assetToDbRow = (asset: Partial<Asset>) => ({
+  ...(asset.id && { id: asset.id }),
+  ...(asset.assetNumber !== undefined && { asset_number: asset.assetNumber }),
+  ...(asset.sapNumber !== undefined && { sap_number: asset.sapNumber }),
+  ...(asset.model !== undefined && { model: asset.model }),
+  ...(asset.brand !== undefined && { brand: asset.brand }),
+  ...(asset.serial !== undefined && { serial: asset.serial }),
+  ...(asset.specification !== undefined && { specification: asset.specification }),
+  ...(asset.itemName !== undefined && { item_name: asset.itemName }),
+  ...(asset.officeNumber !== undefined && { office_number: asset.officeNumber }),
+  ...(asset.yearNumber !== undefined && { year_number: asset.yearNumber }),
+  ...(asset.categoryNumber !== undefined && { category_number: asset.categoryNumber }),
+  ...(asset.itemNumber !== undefined && { item_number: asset.itemNumber }),
+  ...(asset.sequenceNumber !== undefined && { sequence_number: asset.sequenceNumber }),
+  ...(asset.location !== undefined && { location: asset.location }),
+  ...(asset.sublocation !== undefined && { sublocation: asset.sublocation }),
+  ...(asset.price !== undefined && { price: asset.price }),
+  ...(asset.accruedDate !== undefined && { accrued_date: asset.accruedDate }),
+  ...(asset.purchaseCode !== undefined && { purchase_code: asset.purchaseCode }),
+  ...(asset.voucherNumber !== undefined && { voucher_number: asset.voucherNumber }),
+  ...(asset.deductedAfterAuction !== undefined && { deducted_after_auction: asset.deductedAfterAuction }),
+  ...(asset.auctionedDate !== undefined && { auctioned_date: asset.auctionedDate }),
+  ...(asset.tagAttached !== undefined && { tag_attached: asset.tagAttached }),
+  ...(asset.quantity !== undefined && { quantity: asset.quantity }),
+  ...(asset.comments !== undefined && { comments: asset.comments }),
+  ...(asset.assignedTo !== undefined && { assigned_to: asset.assignedTo || null }),
+});
 
 export function useAssets() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  const fetchAssets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("assets")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setAssets((data || []).map(dbRowToAsset));
+    } catch (error) {
+      console.error("Error fetching assets:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load assets.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchLocations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("locations")
+        .select("*")
+        .order("name");
+
+      if (error) throw error;
+      setLocations(
+        (data || []).map((row) => ({
+          id: row.id,
+          name: row.name,
+          sublocations: row.sublocations || [],
+        }))
+      );
+    } catch (error) {
+      console.error("Error fetching locations:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load locations.",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
-    // Load from localStorage
-    const storedAssets = localStorage.getItem(STORAGE_KEY);
-    const storedLocations = localStorage.getItem(LOCATIONS_KEY);
-    
-    if (storedAssets) {
-      setAssets(JSON.parse(storedAssets));
-    }
-    
-    if (storedLocations) {
-      setLocations(JSON.parse(storedLocations));
-    } else {
-      // Default locations
-      const defaultLocations: Location[] = [
-        { id: "1", name: "Head Office", sublocations: ["Floor 1", "Floor 2", "Floor 3"] },
-        { id: "2", name: "Branch Office", sublocations: ["Main Hall", "Storage"] },
-        { id: "3", name: "Warehouse", sublocations: ["Section A", "Section B", "Section C"] },
-      ];
-      setLocations(defaultLocations);
-      localStorage.setItem(LOCATIONS_KEY, JSON.stringify(defaultLocations));
-    }
-    
-    setIsLoading(false);
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchAssets(), fetchLocations()]);
+      setIsLoading(false);
+    };
+    loadData();
   }, []);
 
-  const addAsset = (asset: Asset) => {
-    const newAssets = [...assets, asset];
-    setAssets(newAssets);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newAssets));
+  const addAsset = async (asset: Asset) => {
+    try {
+      const dbData = assetToDbRow(asset);
+      const { data, error } = await supabase
+        .from("assets")
+        .insert([dbData])
+        .select()
+        .single();
+
+      if (error) throw error;
+      setAssets((prev) => [dbRowToAsset(data), ...prev]);
+      return { error: null };
+    } catch (error) {
+      console.error("Error adding asset:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add asset.",
+        variant: "destructive",
+      });
+      return { error };
+    }
   };
 
-  const updateAsset = (id: string, updates: Partial<Asset>) => {
-    const newAssets = assets.map((asset) =>
-      asset.id === id ? { ...asset, ...updates } : asset
-    );
-    setAssets(newAssets);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newAssets));
+  const updateAsset = async (id: string, updates: Partial<Asset>) => {
+    try {
+      const dbData = assetToDbRow(updates);
+      const { data, error } = await supabase
+        .from("assets")
+        .update(dbData)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      setAssets((prev) =>
+        prev.map((asset) => (asset.id === id ? dbRowToAsset(data) : asset))
+      );
+      return { error: null };
+    } catch (error) {
+      console.error("Error updating asset:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update asset.",
+        variant: "destructive",
+      });
+      return { error };
+    }
   };
 
-  const deleteAsset = (id: string) => {
-    const newAssets = assets.filter((asset) => asset.id !== id);
-    setAssets(newAssets);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newAssets));
+  const deleteAsset = async (id: string) => {
+    try {
+      const { error } = await supabase.from("assets").delete().eq("id", id);
+
+      if (error) throw error;
+      setAssets((prev) => prev.filter((asset) => asset.id !== id));
+      return { error: null };
+    } catch (error) {
+      console.error("Error deleting asset:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete asset.",
+        variant: "destructive",
+      });
+      return { error };
+    }
   };
 
-  const addLocation = (location: Location) => {
-    const newLocations = [...locations, location];
-    setLocations(newLocations);
-    localStorage.setItem(LOCATIONS_KEY, JSON.stringify(newLocations));
+  const addLocation = async (location: Location) => {
+    try {
+      const { data, error } = await supabase
+        .from("locations")
+        .insert([{ name: location.name, sublocations: location.sublocations }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      setLocations((prev) =>
+        [...prev, { id: data.id, name: data.name, sublocations: data.sublocations || [] }].sort(
+          (a, b) => a.name.localeCompare(b.name)
+        )
+      );
+      return { error: null };
+    } catch (error) {
+      console.error("Error adding location:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add location.",
+        variant: "destructive",
+      });
+      return { error };
+    }
   };
 
-  const updateLocation = (id: string, updates: Partial<Location>) => {
-    const newLocations = locations.map((loc) =>
-      loc.id === id ? { ...loc, ...updates } : loc
-    );
-    setLocations(newLocations);
-    localStorage.setItem(LOCATIONS_KEY, JSON.stringify(newLocations));
+  const updateLocation = async (id: string, updates: Partial<Location>) => {
+    try {
+      const { data, error } = await supabase
+        .from("locations")
+        .update({ name: updates.name, sublocations: updates.sublocations })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      setLocations((prev) =>
+        prev
+          .map((loc) =>
+            loc.id === id ? { id: data.id, name: data.name, sublocations: data.sublocations || [] } : loc
+          )
+          .sort((a, b) => a.name.localeCompare(b.name))
+      );
+      return { error: null };
+    } catch (error) {
+      console.error("Error updating location:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update location.",
+        variant: "destructive",
+      });
+      return { error };
+    }
   };
 
-  const deleteLocation = (id: string) => {
-    const newLocations = locations.filter((loc) => loc.id !== id);
-    setLocations(newLocations);
-    localStorage.setItem(LOCATIONS_KEY, JSON.stringify(newLocations));
+  const deleteLocation = async (id: string) => {
+    try {
+      const { error } = await supabase.from("locations").delete().eq("id", id);
+
+      if (error) throw error;
+      setLocations((prev) => prev.filter((loc) => loc.id !== id));
+      return { error: null };
+    } catch (error) {
+      console.error("Error deleting location:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete location.",
+        variant: "destructive",
+      });
+      return { error };
+    }
   };
 
   const generateAssetNumber = (
@@ -80,7 +267,6 @@ export function useAssets() {
     categoryNumber: string,
     itemNumber: string
   ) => {
-    // Find next sequence number for this combination
     const prefix = `${officeNumber}-${yearNumber}-${categoryNumber}-${itemNumber}`;
     const existingAssets = assets.filter((a) => a.assetNumber.startsWith(prefix));
     const nextSequence = (existingAssets.length + 1).toString().padStart(2, "0");
@@ -89,7 +275,7 @@ export function useAssets() {
 
   const exportToCSV = () => {
     if (assets.length === 0) return;
-    
+
     const headers = Object.keys(assets[0]).join(",");
     const rows = assets.map((asset) =>
       Object.values(asset)
@@ -97,7 +283,7 @@ export function useAssets() {
         .join(",")
     );
     const csv = [headers, ...rows].join("\n");
-    
+
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -107,30 +293,35 @@ export function useAssets() {
     URL.revokeObjectURL(url);
   };
 
-  const importFromCSV = (file: File) => {
+  const importFromCSV = async (file: File) => {
     return new Promise<void>((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
           const text = e.target?.result as string;
           const lines = text.split("\n");
           const headers = lines[0].split(",");
-          
-          const importedAssets: Asset[] = lines.slice(1).filter(line => line.trim()).map((line) => {
-            const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-            const asset: Record<string, string | number | boolean> = {};
-            
-            headers.forEach((header, index) => {
-              const value = values[index]?.replace(/^"|"$/g, "") || "";
-              asset[header.trim()] = value;
+
+          const importedAssets: Asset[] = lines
+            .slice(1)
+            .filter((line) => line.trim())
+            .map((line) => {
+              const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+              const asset: Record<string, string | number | boolean> = {};
+
+              headers.forEach((header, index) => {
+                const value = values[index]?.replace(/^"|"$/g, "") || "";
+                asset[header.trim()] = value;
+              });
+
+              return asset as unknown as Asset;
             });
-            
-            return asset as unknown as Asset;
-          });
-          
-          const newAssets = [...assets, ...importedAssets];
-          setAssets(newAssets);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(newAssets));
+
+          // Insert all imported assets to database
+          for (const asset of importedAssets) {
+            await addAsset(asset);
+          }
+
           resolve();
         } catch {
           reject(new Error("Failed to parse CSV file"));
@@ -154,5 +345,8 @@ export function useAssets() {
     generateAssetNumber,
     exportToCSV,
     importFromCSV,
+    refetch: async () => {
+      await Promise.all([fetchAssets(), fetchLocations()]);
+    },
   };
 }

@@ -121,7 +121,7 @@ export default function EditAsset() {
     setSublocations(location?.sublocations || []);
   }, [formData.location, locations]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!id || !asset) {
@@ -135,7 +135,7 @@ export default function EditAsset() {
 
     const newAssetNumber = `${formData.officeNumber}-${formData.yearNumber}-${formData.categoryNumber}-${formData.itemNumber}-${formData.sequenceNumber}`;
     
-    updateAsset(id, {
+    const { error } = await updateAsset(id, {
       assetNumber: newAssetNumber,
       sapNumber: formData.sapNumber,
       model: formData.model,
@@ -162,11 +162,13 @@ export default function EditAsset() {
       assignedTo: formData.assignedTo,
     });
 
-    toast({
-      title: "Asset Updated",
-      description: `Asset ${newAssetNumber} has been updated successfully.`,
-    });
-    navigate("/assets");
+    if (!error) {
+      toast({
+        title: "Asset Updated",
+        description: `Asset ${newAssetNumber} has been updated successfully.`,
+      });
+      navigate("/assets");
+    }
   };
 
   const updateField = (field: string, value: string | boolean) => {
