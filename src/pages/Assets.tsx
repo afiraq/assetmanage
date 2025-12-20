@@ -210,7 +210,7 @@ export default function Assets() {
                       <p className="text-sm">{getStaffName(asset.assignedTo)}</p>
                     </TableCell>
                     <TableCell className="font-mono">
-                      ${asset.price.toLocaleString()}
+                      MVR {asset.price.toLocaleString()}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
@@ -262,7 +262,7 @@ export default function Assets() {
           </p>
           <p>
             Total Value: <span className="font-mono font-medium text-foreground">
-              ${filteredAssets.reduce((sum, a) => sum + a.price, 0).toLocaleString()}
+              MVR {filteredAssets.reduce((sum, a) => sum + a.price, 0).toLocaleString()}
             </span>
           </p>
         </div>
