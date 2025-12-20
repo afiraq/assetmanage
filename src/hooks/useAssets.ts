@@ -31,6 +31,7 @@ const dbRowToAsset = (row: any): Asset => ({
   comments: row.comments || "",
   assignedTo: row.assigned_to || "",
   createdAt: row.created_at || new Date().toISOString(),
+  imageUrl: row.image_url || null,
 });
 
 // Helper to convert camelCase Asset to snake_case for DB
@@ -60,6 +61,7 @@ const assetToDbRow = (asset: Partial<Asset>) => ({
   ...(asset.quantity !== undefined && { quantity: asset.quantity }),
   ...(asset.comments !== undefined && { comments: asset.comments }),
   ...(asset.assignedTo !== undefined && { assigned_to: asset.assignedTo || null }),
+  ...(asset.imageUrl !== undefined && { image_url: asset.imageUrl }),
 });
 
 export function useAssets() {

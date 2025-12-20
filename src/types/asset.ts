@@ -25,6 +25,7 @@ export interface Asset {
   comments: string;
   assignedTo: string;
   createdAt: string;
+  imageUrl: string | null;
 }
 
 export interface Category {

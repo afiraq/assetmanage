@@ -27,6 +27,7 @@ import { Asset } from "@/types/asset";
 import { useToast } from "@/hooks/use-toast";
 import { useStaff } from "@/hooks/useStaff";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AssetImageUpload } from "@/components/assets/AssetImageUpload";
 
 export default function AddAsset() {
   const navigate = useNavigate();
@@ -58,6 +59,7 @@ export default function AddAsset() {
     quantity: "1",
     comments: "",
     assignedTo: "",
+    imageUrl: null as string | null,
   });
 
   const [generatedAssetNumber, setGeneratedAssetNumber] = useState("");
@@ -161,6 +163,7 @@ export default function AddAsset() {
       comments: formData.comments,
       assignedTo: formData.assignedTo,
       createdAt: new Date().toISOString(),
+      imageUrl: formData.imageUrl,
     };
 
     const { error } = await addAsset(newAsset);
@@ -361,14 +364,20 @@ export default function AddAsset() {
               )}
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="specification">Specification</Label>
-            <Textarea
-              id="specification"
-              placeholder="Enter specifications..."
-              value={formData.specification}
-              onChange={(e) => updateField("specification", e.target.value)}
-              rows={3}
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="specification">Specification</Label>
+              <Textarea
+                id="specification"
+                placeholder="Enter specifications..."
+                value={formData.specification}
+                onChange={(e) => updateField("specification", e.target.value)}
+                rows={3}
+              />
+            </div>
+            <AssetImageUpload
+              imageUrl={formData.imageUrl}
+              onImageChange={(url) => setFormData((prev) => ({ ...prev, imageUrl: url }))}
             />
           </div>
         </div>
