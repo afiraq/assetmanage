@@ -31,30 +31,22 @@ export default function Dashboard() {
           <StatCard
             title="Total Assets"
             value={totalAssets.toLocaleString()}
-            change="+12 this month"
-            changeType="positive"
             icon={Package}
           />
           <StatCard
             title="Total Value"
             value={`MVR ${totalValue.toLocaleString()}`}
-            change="Updated today"
-            changeType="neutral"
             icon={Banknote}
             iconColor="gradient-primary"
           />
           <StatCard
             title="Tagged Assets"
             value={taggedAssets.toLocaleString()}
-            change={`${totalAssets > 0 ? Math.round((taggedAssets / totalAssets) * 100) : 0}% tagged`}
-            changeType="positive"
             icon={Tag}
           />
           <StatCard
             title="Deducted (Auction)"
             value={auctionedAssets.toLocaleString()}
-            change="After auction"
-            changeType="neutral"
             icon={AlertTriangle}
           />
         </div>
