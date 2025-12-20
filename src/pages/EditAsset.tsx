@@ -26,6 +26,7 @@ import { categories, getSubcategoryByCode } from "@/data/categories";
 import { useToast } from "@/hooks/use-toast";
 import { useStaff } from "@/hooks/useStaff";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AssetImageUpload } from "@/components/assets/AssetImageUpload";
 
 export default function EditAsset() {
   const navigate = useNavigate();
@@ -60,6 +61,7 @@ export default function EditAsset() {
     quantity: "1",
     comments: "",
     assignedTo: "",
+    imageUrl: null as string | null,
   });
 
   const [subcategories, setSubcategories] = useState<{ code: string; name: string }[]>([]);
@@ -105,6 +107,7 @@ export default function EditAsset() {
         quantity: asset.quantity?.toString() || "1",
         comments: asset.comments || "",
         assignedTo: asset.assignedTo || "",
+        imageUrl: asset.imageUrl || null,
       });
     }
   }, [asset]);
@@ -160,6 +163,7 @@ export default function EditAsset() {
       quantity: parseInt(formData.quantity) || 1,
       comments: formData.comments,
       assignedTo: formData.assignedTo,
+      imageUrl: formData.imageUrl,
     });
 
     if (!error) {
@@ -399,14 +403,21 @@ export default function EditAsset() {
               )}
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="specification">Specification</Label>
-            <Textarea
-              id="specification"
-              placeholder="Enter specifications..."
-              value={formData.specification}
-              onChange={(e) => updateField("specification", e.target.value)}
-              rows={3}
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="specification">Specification</Label>
+              <Textarea
+                id="specification"
+                placeholder="Enter specifications..."
+                value={formData.specification}
+                onChange={(e) => updateField("specification", e.target.value)}
+                rows={3}
+              />
+            </div>
+            <AssetImageUpload
+              imageUrl={formData.imageUrl}
+              onImageChange={(url) => setFormData((prev) => ({ ...prev, imageUrl: url }))}
+              assetId={id}
             />
           </div>
         </div>

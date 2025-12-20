@@ -24,8 +24,10 @@ import { useAssets } from "@/hooks/useAssets";
 import { categories } from "@/data/categories";
 import { useToast } from "@/hooks/use-toast";
 import { AssetBarcode } from "@/components/assets/AssetBarcode";
+import { AssetImageDialog } from "@/components/assets/AssetImageDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStaff } from "@/hooks/useStaff";
+import { Asset } from "@/types/asset";
 
 export default function Assets() {
   const navigate = useNavigate();
@@ -35,6 +37,8 @@ export default function Assets() {
   const { staff } = useStaff();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
 
   const getStaffName = (staffId: string) => {
     if (!staffId) return "-";
@@ -225,7 +229,15 @@ export default function Assets() {
                     <TableCell>
                       <div className="flex justify-end gap-1">
                         <AssetBarcode asset={asset} />
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={() => {
+                            setSelectedAsset(asset);
+                            setImageDialogOpen(true);
+                          }}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
@@ -267,6 +279,12 @@ export default function Assets() {
           </p>
         </div>
       </div>
+
+      <AssetImageDialog
+        asset={selectedAsset}
+        open={imageDialogOpen}
+        onOpenChange={setImageDialogOpen}
+      />
     </MainLayout>
   );
 }

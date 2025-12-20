@@ -26,6 +26,7 @@ export type Database = {
           created_at: string
           deducted_after_auction: boolean | null
           id: string
+          image_url: string | null
           item_name: string
           item_number: string | null
           location: string | null
@@ -55,6 +56,7 @@ export type Database = {
           created_at?: string
           deducted_after_auction?: boolean | null
           id?: string
+          image_url?: string | null
           item_name: string
           item_number?: string | null
           location?: string | null
@@ -84,6 +86,7 @@ export type Database = {
           created_at?: string
           deducted_after_auction?: boolean | null
           id?: string
+          image_url?: string | null
           item_name?: string
           item_number?: string | null
           location?: string | null
