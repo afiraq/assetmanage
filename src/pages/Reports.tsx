@@ -128,7 +128,7 @@ export default function Reports() {
           <div className="rounded-xl bg-card border border-border p-4 shadow-sm">
             <p className="text-sm text-muted-foreground">Total Value</p>
             <p className="text-2xl font-bold text-card-foreground font-mono">
-              ${filteredAssets.reduce((sum, a) => sum + a.price, 0).toLocaleString()}
+              MVR {filteredAssets.reduce((sum, a) => sum + a.price, 0).toLocaleString()}
             </p>
           </div>
           <div className="rounded-xl bg-card border border-border p-4 shadow-sm">
@@ -171,7 +171,7 @@ export default function Reports() {
                       {asset.location}
                       {asset.sublocation && ` / ${asset.sublocation}`}
                     </TableCell>
-                    <TableCell className="font-mono">${asset.price.toLocaleString()}</TableCell>
+                    <TableCell className="font-mono">MVR {asset.price.toLocaleString()}</TableCell>
                     <TableCell>
                       {asset.deductedAfterAuction ? "Auctioned" : asset.tagAttached ? "Tagged" : "Active"}
                     </TableCell>

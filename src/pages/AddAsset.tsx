@@ -422,7 +422,7 @@ export default function AddAsset() {
             <h3 className="text-lg font-semibold text-card-foreground">Financial</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="price">Price ($)</Label>
+                <Label htmlFor="price">Price (MVR)</Label>
                 <Input
                   id="price"
                   type="number"
