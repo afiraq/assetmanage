@@ -1,4 +1,4 @@
-import { Package, DollarSign, Tag, AlertTriangle } from "lucide-react";
+import { Package, Banknote, Tag, AlertTriangle } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { RecentAssets } from "@/components/dashboard/RecentAssets";
@@ -37,10 +37,10 @@ export default function Dashboard() {
           />
           <StatCard
             title="Total Value"
-            value={`$${totalValue.toLocaleString()}`}
+            value={`MVR ${totalValue.toLocaleString()}`}
             change="Updated today"
             changeType="neutral"
-            icon={DollarSign}
+            icon={Banknote}
             iconColor="gradient-primary"
           />
           <StatCard
