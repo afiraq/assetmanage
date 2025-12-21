@@ -129,9 +129,12 @@ export default function Assets() {
       });
       importFromCSV(file)
         .then((result) => {
+          const parts = [`Successfully imported ${result.imported} assets.`];
+          if (result.skipped > 0) parts.push(`Skipped ${result.skipped} duplicates.`);
+          if (result.failed > 0) parts.push(`Failed: ${result.failed}`);
           toast({
             title: "Import Complete",
-            description: `Successfully imported ${result.imported} assets.${result.failed > 0 ? ` Failed: ${result.failed}` : ''}`,
+            description: parts.join(' '),
           });
         })
         .catch(() => {

@@ -75,11 +75,12 @@ const defaultLdapConfig: LdapConfig = {
 export default function Settings() {
   const { isAdmin, user } = useAuth();
   const { staff, isLoading: staffLoading, addStaff, updateStaff, deleteStaff } = useStaff();
-  const { assets, locations, exportToCSV, importFromCSV, refetch } = useAssets();
+  const { assets, locations, exportToCSV, importFromCSV, removeDuplicates, refetch } = useAssets();
   
   // Data Management State
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isRemovingDuplicates, setIsRemovingDuplicates] = useState(false);
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const importFileRef = useRef<HTMLInputElement>(null);
@@ -773,9 +774,12 @@ export default function Settings() {
     try {
       const result = await importFromCSV(file);
       await refetch();
+      const parts = [`Successfully imported ${result.imported} assets.`];
+      if (result.skipped > 0) parts.push(`Skipped ${result.skipped} duplicates.`);
+      if (result.failed > 0) parts.push(`Failed: ${result.failed}`);
       toast({
         title: "Import Complete",
-        description: `Successfully imported ${result.imported} assets.${result.failed > 0 ? ` Failed: ${result.failed}` : ''}`,
+        description: parts.join(' '),
       });
     } catch (error) {
       toast({
@@ -1330,6 +1334,39 @@ export default function Settings() {
                   {isImporting ? "Restoring..." : "Restore Backup"}
                 </Button>
               </div>
+            </div>
+
+            {/* Remove Duplicates Section */}
+            <div className="p-4 rounded-lg border border-border">
+              <h4 className="font-medium text-card-foreground mb-2">Remove Duplicate Assets</h4>
+              <p className="text-sm text-muted-foreground mb-3">Find and remove assets with duplicate asset numbers. Keeps the oldest entry.</p>
+              <Button 
+                variant="outline" 
+                onClick={async () => {
+                  setIsRemovingDuplicates(true);
+                  try {
+                    const deleted = await removeDuplicates();
+                    toast({
+                      title: deleted > 0 ? "Duplicates Removed" : "No Duplicates Found",
+                      description: deleted > 0 
+                        ? `Successfully removed ${deleted} duplicate assets.`
+                        : "No duplicate asset numbers were found.",
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to remove duplicates.",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setIsRemovingDuplicates(false);
+                  }
+                }}
+                disabled={isRemovingDuplicates || assets.length === 0}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {isRemovingDuplicates ? "Removing..." : "Remove Duplicates"}
+              </Button>
             </div>
 
             {/* Danger Zone */}

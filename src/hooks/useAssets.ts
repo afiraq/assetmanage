@@ -359,7 +359,7 @@ export function useAssets() {
   };
 
   const importFromCSV = async (file: File) => {
-    return new Promise<{ imported: number; failed: number }>((resolve, reject) => {
+    return new Promise<{ imported: number; failed: number; skipped: number }>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
@@ -377,6 +377,15 @@ export function useAssets() {
               return v.toString(16);
             });
           };
+
+          // Fetch existing asset numbers for duplicate detection
+          const { data: existingAssets } = await supabase
+            .from("assets")
+            .select("asset_number");
+          
+          const existingAssetNumbers = new Set(
+            existingAssets?.map(a => a.asset_number) || []
+          );
 
           const importedAssets = lines
             .slice(1)
@@ -416,13 +425,28 @@ export function useAssets() {
               return asset as unknown as Asset;
             });
 
+          // Filter out duplicates (assets with existing asset_number)
+          const newAssets: Asset[] = [];
+          const seenInBatch = new Set<string>();
+          let skipped = 0;
+
+          for (const asset of importedAssets) {
+            const assetNumber = asset.assetNumber;
+            if (existingAssetNumbers.has(assetNumber) || seenInBatch.has(assetNumber)) {
+              skipped++;
+            } else {
+              newAssets.push(asset);
+              seenInBatch.add(assetNumber);
+            }
+          }
+
           // Batch insert in chunks of 100 for better performance
           const batchSize = 100;
           let imported = 0;
           let failed = 0;
 
-          for (let i = 0; i < importedAssets.length; i += batchSize) {
-            const batch = importedAssets.slice(i, i + batchSize);
+          for (let i = 0; i < newAssets.length; i += batchSize) {
+            const batch = newAssets.slice(i, i + batchSize);
             const dbBatch = batch.map(asset => assetToDbRow(asset));
             
             const { error } = await supabase
@@ -440,7 +464,7 @@ export function useAssets() {
           // Refresh assets after import
           await fetchAssets();
 
-          resolve({ imported, failed });
+          resolve({ imported, failed, skipped });
         } catch (err) {
           console.error("CSV import error:", err);
           reject(new Error("Failed to parse CSV file"));
@@ -449,6 +473,64 @@ export function useAssets() {
       reader.onerror = () => reject(new Error("Failed to read file"));
       reader.readAsText(file);
     });
+  };
+
+  const removeDuplicates = async (): Promise<number> => {
+    // Fetch all assets grouped by asset_number
+    const { data: allAssets, error } = await supabase
+      .from("assets")
+      .select("id, asset_number, created_at")
+      .order("created_at", { ascending: true });
+
+    if (error || !allAssets) {
+      console.error("Error fetching assets for duplicate removal:", error);
+      return 0;
+    }
+
+    // Group by asset_number and find duplicates (keep the oldest one)
+    const assetsByNumber = new Map<string, { id: string; created_at: string }[]>();
+    
+    for (const asset of allAssets) {
+      const existing = assetsByNumber.get(asset.asset_number) || [];
+      existing.push({ id: asset.id, created_at: asset.created_at });
+      assetsByNumber.set(asset.asset_number, existing);
+    }
+
+    // Collect IDs to delete (all except the first/oldest one)
+    const idsToDelete: string[] = [];
+    
+    for (const [, assets] of assetsByNumber) {
+      if (assets.length > 1) {
+        // Sort by created_at and skip the first (oldest) one
+        assets.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        for (let i = 1; i < assets.length; i++) {
+          idsToDelete.push(assets[i].id);
+        }
+      }
+    }
+
+    if (idsToDelete.length === 0) {
+      return 0;
+    }
+
+    // Delete duplicates in batches
+    const batchSize = 100;
+    let deleted = 0;
+
+    for (let i = 0; i < idsToDelete.length; i += batchSize) {
+      const batch = idsToDelete.slice(i, i + batchSize);
+      const { error: deleteError } = await supabase
+        .from("assets")
+        .delete()
+        .in("id", batch);
+
+      if (!deleteError) {
+        deleted += batch.length;
+      }
+    }
+
+    await fetchAssets();
+    return deleted;
   };
 
   return {
@@ -464,6 +546,7 @@ export function useAssets() {
     generateAssetNumber,
     exportToCSV,
     importFromCSV,
+    removeDuplicates,
     refetch: async () => {
       await Promise.all([fetchAssets(), fetchLocations()]);
     },
