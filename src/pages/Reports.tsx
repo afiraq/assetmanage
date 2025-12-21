@@ -20,7 +20,7 @@ import {
 import { useAssets } from "@/hooks/useAssets";
 import { categories } from "@/data/categories";
 
-type ReportType = "all" | "location" | "category" | "brand" | "auctioned";
+type ReportType = "all" | "location" | "category" | "brand" | "auctioned" | "stolen" | "transferred" | "discarded";
 
 export default function Reports() {
   const { assets, locations, exportToCSV } = useAssets();
@@ -39,6 +39,12 @@ export default function Reports() {
         return assets.filter((a) => a.brand === filterValue);
       case "auctioned":
         return assets.filter((a) => a.status === 'auctioned');
+      case "stolen":
+        return assets.filter((a) => a.status === 'stolen');
+      case "transferred":
+        return assets.filter((a) => a.status === 'transferred');
+      case "discarded":
+        return assets.filter((a) => a.status === 'discarded');
       default:
         return assets;
     }
@@ -85,10 +91,13 @@ export default function Reports() {
                   <SelectItem value="category">By Category</SelectItem>
                   <SelectItem value="brand">By Brand</SelectItem>
                   <SelectItem value="auctioned">Auctioned Assets</SelectItem>
+                  <SelectItem value="stolen">Stolen Assets</SelectItem>
+                  <SelectItem value="transferred">Transferred Assets</SelectItem>
+                  <SelectItem value="discarded">Discarded Assets</SelectItem>
                 </SelectContent>
               </Select>
 
-              {reportType !== "all" && reportType !== "auctioned" && (
+              {reportType !== "all" && !["auctioned", "stolen", "transferred", "discarded"].includes(reportType) && (
                 <Select value={filterValue} onValueChange={setFilterValue}>
                   <SelectTrigger className="w-48">
                     <Filter className="h-4 w-4 mr-2" />
