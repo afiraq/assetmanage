@@ -72,13 +72,31 @@ export function useAssets() {
 
   const fetchAssets = async () => {
     try {
-      const { data, error } = await supabase
-        .from("assets")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const allAssets: any[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      let hasMore = true;
 
-      if (error) throw error;
-      setAssets((data || []).map(dbRowToAsset));
+      // Fetch all assets using pagination to overcome the 1000 row limit
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("assets")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allAssets.push(...data);
+          from += pageSize;
+          hasMore = data.length === pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      setAssets(allAssets.map(dbRowToAsset));
     } catch (error) {
       console.error("Error fetching assets:", error);
       toast({
