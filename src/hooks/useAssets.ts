@@ -359,7 +359,7 @@ export function useAssets() {
   };
 
   const importFromCSV = async (file: File) => {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<{ imported: number; failed: number }>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
@@ -378,7 +378,7 @@ export function useAssets() {
             });
           };
 
-          const importedAssets: Asset[] = lines
+          const importedAssets = lines
             .slice(1)
             .filter((line) => line.trim())
             .map((line) => {
@@ -416,12 +416,31 @@ export function useAssets() {
               return asset as unknown as Asset;
             });
 
-          // Insert all imported assets to database
-          for (const asset of importedAssets) {
-            await addAsset(asset);
+          // Batch insert in chunks of 100 for better performance
+          const batchSize = 100;
+          let imported = 0;
+          let failed = 0;
+
+          for (let i = 0; i < importedAssets.length; i += batchSize) {
+            const batch = importedAssets.slice(i, i + batchSize);
+            const dbBatch = batch.map(asset => assetToDbRow(asset));
+            
+            const { error } = await supabase
+              .from("assets")
+              .insert(dbBatch);
+
+            if (error) {
+              console.error("Batch insert error:", error);
+              failed += batch.length;
+            } else {
+              imported += batch.length;
+            }
           }
 
-          resolve();
+          // Refresh assets after import
+          await fetchAssets();
+
+          resolve({ imported, failed });
         } catch (err) {
           console.error("CSV import error:", err);
           reject(new Error("Failed to parse CSV file"));

@@ -123,11 +123,15 @@ export default function Assets() {
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      toast({
+        title: "Importing...",
+        description: "Please wait while assets are being imported.",
+      });
       importFromCSV(file)
-        .then(() => {
+        .then((result) => {
           toast({
-            title: "Import Successful",
-            description: "Assets have been imported from CSV.",
+            title: "Import Complete",
+            description: `Successfully imported ${result.imported} assets.${result.failed > 0 ? ` Failed: ${result.failed}` : ''}`,
           });
         })
         .catch(() => {
