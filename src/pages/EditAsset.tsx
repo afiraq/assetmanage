@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useStaff } from "@/hooks/useStaff";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AssetImageUpload } from "@/components/assets/AssetImageUpload";
+import { AssetStatus } from "@/types/asset";
 
 export default function EditAsset() {
   const navigate = useNavigate();
@@ -62,6 +63,7 @@ export default function EditAsset() {
     comments: "",
     assignedTo: "",
     imageUrl: null as string | null,
+    status: "active" as AssetStatus,
   });
 
   const [subcategories, setSubcategories] = useState<{ code: string; name: string }[]>([]);
@@ -108,6 +110,7 @@ export default function EditAsset() {
         comments: asset.comments || "",
         assignedTo: asset.assignedTo || "",
         imageUrl: asset.imageUrl || null,
+        status: asset.status || "active",
       });
     }
   }, [asset]);
@@ -164,6 +167,7 @@ export default function EditAsset() {
       comments: formData.comments,
       assignedTo: formData.assignedTo,
       imageUrl: formData.imageUrl,
+      status: formData.status,
     });
 
     if (!error) {
@@ -517,6 +521,24 @@ export default function EditAsset() {
         <div className="rounded-xl bg-card border border-border p-6 shadow-sm space-y-6">
           <h3 className="text-lg font-semibold text-card-foreground">Status & Tracking</h3>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <Label htmlFor="status">Asset Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => updateField("status", value as AssetStatus)}
+              >
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="transferred">Transferred</SelectItem>
+                  <SelectItem value="discarded">Discarded</SelectItem>
+                  <SelectItem value="stolen">Stolen</SelectItem>
+                  <SelectItem value="auctioned">Auctioned</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-center space-x-3 rounded-lg border border-border p-4">
               <Checkbox
                 id="tagAttached"
@@ -534,7 +556,7 @@ export default function EditAsset() {
               <Label htmlFor="deductedAfterAuction" className="cursor-pointer">Deducted After Auction</Label>
             </div>
             {formData.deductedAfterAuction && (
-              <div className="space-y-2 sm:col-span-2">
+              <div className="space-y-2">
                 <Label htmlFor="auctionedDate">Auctioned Date</Label>
                 <Input
                   id="auctionedDate"

@@ -39,6 +39,7 @@ export type Database = {
           sequence_number: string | null
           serial: string | null
           specification: string | null
+          status: string | null
           sublocation: string | null
           tag_attached: boolean | null
           updated_at: string
@@ -69,6 +70,7 @@ export type Database = {
           sequence_number?: string | null
           serial?: string | null
           specification?: string | null
+          status?: string | null
           sublocation?: string | null
           tag_attached?: boolean | null
           updated_at?: string
@@ -99,6 +101,7 @@ export type Database = {
           sequence_number?: string | null
           serial?: string | null
           specification?: string | null
+          status?: string | null
           sublocation?: string | null
           tag_attached?: boolean | null
           updated_at?: string

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Asset, Location } from "@/types/asset";
+import { Asset, AssetStatus, Location } from "@/types/asset";
 import { useToast } from "@/hooks/use-toast";
 
 // Helper to convert snake_case DB row to camelCase Asset
@@ -32,6 +32,7 @@ const dbRowToAsset = (row: any): Asset => ({
   assignedTo: row.assigned_to || "",
   createdAt: row.created_at || new Date().toISOString(),
   imageUrl: row.image_url || null,
+  status: (row.status as AssetStatus) || "active",
 });
 
 // Helper to convert camelCase Asset to snake_case for DB
@@ -62,6 +63,7 @@ const assetToDbRow = (asset: Partial<Asset>) => ({
   ...(asset.comments !== undefined && { comments: asset.comments }),
   ...(asset.assignedTo !== undefined && { assigned_to: asset.assignedTo || null }),
   ...(asset.imageUrl !== undefined && { image_url: asset.imageUrl }),
+  ...(asset.status !== undefined && { status: asset.status }),
 });
 
 export function useAssets() {
