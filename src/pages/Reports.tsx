@@ -28,8 +28,14 @@ export default function Reports() {
   const [filterValue, setFilterValue] = useState<string>("all");
 
   const getFilteredAssets = () => {
-    if (reportType === "all" || filterValue === "all") return assets;
-
+    // For status-based reports, don't check filterValue
+    const statusReports = ["auctioned", "stolen", "transferred", "discarded"];
+    if (reportType === "all") return assets;
+    if (statusReports.includes(reportType)) {
+      // Handle status reports directly
+    } else if (filterValue === "all") {
+      return assets;
+    }
     switch (reportType) {
       case "location":
         return assets.filter((a) => a.location === filterValue);
