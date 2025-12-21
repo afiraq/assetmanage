@@ -56,7 +56,6 @@ export default function EditAsset() {
     accruedDate: "",
     purchaseCode: "",
     voucherNumber: "",
-    deductedAfterAuction: false,
     auctionedDate: "",
     tagAttached: false,
     quantity: "1",
@@ -103,7 +102,6 @@ export default function EditAsset() {
         accruedDate: asset.accruedDate || "",
         purchaseCode: asset.purchaseCode || "",
         voucherNumber: asset.voucherNumber || "",
-        deductedAfterAuction: asset.deductedAfterAuction || false,
         auctionedDate: asset.auctionedDate || "",
         tagAttached: asset.tagAttached || false,
         quantity: asset.quantity?.toString() || "1",
@@ -160,7 +158,6 @@ export default function EditAsset() {
       accruedDate: formData.accruedDate,
       purchaseCode: formData.purchaseCode,
       voucherNumber: formData.voucherNumber,
-      deductedAfterAuction: formData.deductedAfterAuction,
       auctionedDate: formData.auctionedDate || null,
       tagAttached: formData.tagAttached,
       quantity: parseInt(formData.quantity) || 1,
@@ -547,25 +544,15 @@ export default function EditAsset() {
               />
               <Label htmlFor="tagAttached" className="cursor-pointer">Tag Attached</Label>
             </div>
-            <div className="flex items-center space-x-3 rounded-lg border border-border p-4">
-              <Checkbox
-                id="deductedAfterAuction"
-                checked={formData.deductedAfterAuction}
-                onCheckedChange={(checked) => updateField("deductedAfterAuction", !!checked)}
+            <div className="space-y-2">
+              <Label htmlFor="auctionedDate">Auctioned Date</Label>
+              <Input
+                id="auctionedDate"
+                type="date"
+                value={formData.auctionedDate}
+                onChange={(e) => updateField("auctionedDate", e.target.value)}
               />
-              <Label htmlFor="deductedAfterAuction" className="cursor-pointer">Deducted After Auction</Label>
             </div>
-            {formData.deductedAfterAuction && (
-              <div className="space-y-2">
-                <Label htmlFor="auctionedDate">Auctioned Date</Label>
-                <Input
-                  id="auctionedDate"
-                  type="date"
-                  value={formData.auctionedDate}
-                  onChange={(e) => updateField("auctionedDate", e.target.value)}
-                />
-              </div>
-            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="comments">Comments</Label>

@@ -24,7 +24,6 @@ const dbRowToAsset = (row: any): Asset => ({
   accruedDate: row.accrued_date || "",
   purchaseCode: row.purchase_code || "",
   voucherNumber: row.voucher_number || "",
-  deductedAfterAuction: row.deducted_after_auction || false,
   auctionedDate: row.auctioned_date || null,
   tagAttached: row.tag_attached || false,
   quantity: row.quantity || 1,
@@ -56,7 +55,6 @@ const assetToDbRow = (asset: Partial<Asset>) => ({
   ...(asset.accruedDate !== undefined && { accrued_date: asset.accruedDate }),
   ...(asset.purchaseCode !== undefined && { purchase_code: asset.purchaseCode }),
   ...(asset.voucherNumber !== undefined && { voucher_number: asset.voucherNumber }),
-  ...(asset.deductedAfterAuction !== undefined && { deducted_after_auction: asset.deductedAfterAuction }),
   ...(asset.auctionedDate !== undefined && { auctioned_date: asset.auctionedDate }),
   ...(asset.tagAttached !== undefined && { tag_attached: asset.tagAttached }),
   ...(asset.quantity !== undefined && { quantity: asset.quantity }),
@@ -293,8 +291,8 @@ export function useAssets() {
       "assetNumber", "sapNumber", "itemName", "brand", "model", "serial",
       "specification", "officeNumber", "yearNumber", "categoryNumber",
       "itemNumber", "sequenceNumber", "location", "sublocation", "price",
-      "accruedDate", "purchaseCode", "voucherNumber", "deductedAfterAuction",
-      "auctionedDate", "tagAttached", "quantity", "comments", "assignedTo"
+      "accruedDate", "purchaseCode", "voucherNumber", "auctionedDate",
+      "tagAttached", "quantity", "comments", "assignedTo", "status"
     ];
 
     const rows = assets.map((asset) =>
@@ -373,7 +371,7 @@ export function useAssets() {
                 const value = values[index]?.trim() || "";
                 
                 // Handle boolean fields
-                if (header === "deductedAfterAuction" || header === "tagAttached") {
+                if (header === "tagAttached") {
                   asset[header] = value.toLowerCase() === "true";
                 }
                 // Handle numeric fields

@@ -20,7 +20,6 @@ export interface Asset {
   accruedDate: string;
   purchaseCode: string;
   voucherNumber: string;
-  deductedAfterAuction: boolean;
   auctionedDate: string | null;
   tagAttached: boolean;
   quantity: number;
