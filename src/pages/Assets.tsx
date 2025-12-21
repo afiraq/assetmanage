@@ -58,6 +58,7 @@ export default function Assets() {
   const { staff } = useStaff();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -85,14 +86,17 @@ export default function Assets() {
       const matchesCategory =
         categoryFilter === "all" || asset.categoryNumber === categoryFilter;
       
-      return matchesSearch && matchesCategory;
+      const matchesStatus =
+        statusFilter === "all" || asset.status === statusFilter;
+      
+      return matchesSearch && matchesCategory && matchesStatus;
     });
-  }, [assets, search, categoryFilter]);
+  }, [assets, search, categoryFilter, statusFilter]);
 
   // Reset to page 1 when filters change
   useMemo(() => {
     setCurrentPage(1);
-  }, [search, categoryFilter]);
+  }, [search, categoryFilter, statusFilter]);
 
   const totalPages = Math.ceil(filteredAssets.length / itemsPerPage);
   const paginatedAssets = useMemo(() => {
@@ -173,6 +177,19 @@ export default function Assets() {
                     {cat.name}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="transferred">Transferred</SelectItem>
+                <SelectItem value="discarded">Discarded</SelectItem>
+                <SelectItem value="stolen">Stolen</SelectItem>
+                <SelectItem value="auctioned">Auctioned</SelectItem>
               </SelectContent>
             </Select>
           </div>
