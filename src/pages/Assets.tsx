@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Download, Upload, Search, Filter, Eye, Pencil, Trash2 } from "lucide-react";
+import { Plus, Download, Upload, Search, Filter, Eye, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,8 @@ export default function Assets() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const getStaffName = (staffId: string) => {
     if (!staffId) return "-";
@@ -51,18 +53,47 @@ export default function Assets() {
     return staffId || "-";
   };
 
-  const filteredAssets = assets.filter((asset) => {
-    const matchesSearch =
-      asset.itemName.toLowerCase().includes(search.toLowerCase()) ||
-      asset.assetNumber.toLowerCase().includes(search.toLowerCase()) ||
-      asset.sapNumber.toLowerCase().includes(search.toLowerCase()) ||
-      asset.brand.toLowerCase().includes(search.toLowerCase());
-    
-    const matchesCategory =
-      categoryFilter === "all" || asset.categoryNumber === categoryFilter;
-    
-    return matchesSearch && matchesCategory;
-  });
+  const filteredAssets = useMemo(() => {
+    return assets.filter((asset) => {
+      const matchesSearch =
+        asset.itemName.toLowerCase().includes(search.toLowerCase()) ||
+        asset.assetNumber.toLowerCase().includes(search.toLowerCase()) ||
+        asset.sapNumber.toLowerCase().includes(search.toLowerCase()) ||
+        asset.brand.toLowerCase().includes(search.toLowerCase());
+      
+      const matchesCategory =
+        categoryFilter === "all" || asset.categoryNumber === categoryFilter;
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [assets, search, categoryFilter]);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [search, categoryFilter]);
+
+  const totalPages = Math.ceil(filteredAssets.length / itemsPerPage);
+  const paginatedAssets = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredAssets.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredAssets, currentPage]);
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, "...", totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, "...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages);
+      }
+    }
+    return pages;
+  };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -169,7 +200,7 @@ export default function Assets() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAssets.length === 0 ? (
+              {paginatedAssets.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                     {assets.length === 0 ? (
@@ -185,7 +216,7 @@ export default function Assets() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredAssets.map((asset) => (
+                paginatedAssets.map((asset) => (
                   <TableRow key={asset.id} className="hover:bg-muted/30 transition-colors">
                     <TableCell className="font-mono text-sm font-medium">
                       {asset.assetNumber}
@@ -267,10 +298,48 @@ export default function Assets() {
           </Table>
         </div>
 
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            {getPageNumbers().map((page, index) => (
+              typeof page === "number" ? (
+                <Button
+                  key={index}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(page)}
+                  className="min-w-[36px]"
+                >
+                  {page}
+                </Button>
+              ) : (
+                <span key={index} className="px-2 text-muted-foreground">...</span>
+              )
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
         {/* Summary */}
         <div className="flex justify-between items-center text-sm text-muted-foreground">
           <p>
-            Showing {filteredAssets.length} of {assets.length} assets
+            Showing {paginatedAssets.length} of {filteredAssets.length} assets
+            {filteredAssets.length !== assets.length && ` (filtered from ${assets.length})`}
           </p>
           <p>
             Total Value: <span className="font-mono font-medium text-foreground">
