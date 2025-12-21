@@ -84,6 +84,8 @@ export default function Settings() {
   const [isClearing, setIsClearing] = useState(false);
   const importFileRef = useRef<HTMLInputElement>(null);
   const backupFileRef = useRef<HTMLInputElement>(null);
+  const staffImportFileRef = useRef<HTMLInputElement>(null);
+  const [isImportingStaff, setIsImportingStaff] = useState(false);
   
   // Staff Management State
   const [isAddStaffDialogOpen, setIsAddStaffDialogOpen] = useState(false);
@@ -231,6 +233,128 @@ export default function Settings() {
     } finally {
       setIsTesting(false);
     }
+  };
+
+  // CSV parsing helper
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (inQuotes) {
+        if (char === '"' && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else if (char === '"') {
+          inQuotes = false;
+        } else {
+          current += char;
+        }
+      } else {
+        if (char === '"') {
+          inQuotes = true;
+        } else if (char === ",") {
+          result.push(current);
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+    }
+    result.push(current);
+    return result;
+  };
+
+  // Staff CSV Import
+  const handleImportStaffCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImportingStaff(true);
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/);
+      const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+
+      let importedCount = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const values = parseCSVLine(line);
+        const row: Record<string, string> = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index]?.trim() || "";
+        });
+
+        // Map CSV columns to staff fields (flexible column names)
+        const name = row.name || row.fullname || row.full_name || row.staffname || "";
+        if (!name) continue; // Skip rows without name
+
+        const staffData = {
+          name: name,
+          email: row.email || row.mail || null,
+          employee_id: row.employee_id || row.employeeid || row.emp_id || row.id || null,
+          department: row.department || row.dept || null,
+          position: row.position || row.title || row.job_title || row.jobtitle || null,
+          is_active: row.is_active?.toLowerCase() !== "false" && row.active?.toLowerCase() !== "false",
+        };
+
+        const { error } = await addStaff(staffData);
+        if (!error) importedCount++;
+      }
+
+      toast({
+        title: "Import Successful",
+        description: `Imported ${importedCount} staff members.`,
+      });
+    } catch (error) {
+      console.error("Staff CSV import error:", error);
+      toast({
+        title: "Import Failed",
+        description: "Failed to import staff from CSV file.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImportingStaff(false);
+      if (staffImportFileRef.current) {
+        staffImportFileRef.current.value = "";
+      }
+    }
+  };
+
+  // Export Staff to CSV
+  const handleExportStaffCSV = () => {
+    if (staff.length === 0) return;
+
+    const headers = ["name", "email", "employee_id", "department", "position", "is_active"];
+    const rows = staff.map(member => 
+      headers.map(h => {
+        const value = member[h as keyof typeof member];
+        if (value === null || value === undefined) return "";
+        const str = String(value);
+        if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      }).join(",")
+    );
+
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `staff_export_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Export Successful",
+      description: `Exported ${staff.length} staff members.`,
+    });
   };
 
   // Staff Management Functions
@@ -860,10 +984,37 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground">Add staff for asset assignment (no login required)</p>
               </div>
             </div>
-            <Button onClick={() => setIsAddStaffDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Staff
-            </Button>
+            <div className="flex gap-2">
+              <input
+                type="file"
+                accept=".csv"
+                ref={staffImportFileRef}
+                onChange={handleImportStaffCSV}
+                className="hidden"
+              />
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => staffImportFileRef.current?.click()}
+                disabled={isImportingStaff}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {isImportingStaff ? "Importing..." : "Import CSV"}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleExportStaffCSV}
+                disabled={staff.length === 0}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <Button onClick={() => setIsAddStaffDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Staff
+              </Button>
+            </div>
           </div>
 
           {staffLoading ? (
