@@ -1,4 +1,4 @@
-import { Package, Banknote, Tag, AlertTriangle } from "lucide-react";
+import { Package, Banknote, Tag, AlertTriangle, CheckCircle, Trash2, ShieldAlert, Gavel } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { RecentAssets } from "@/components/dashboard/RecentAssets";
@@ -8,10 +8,14 @@ import { useAssets } from "@/hooks/useAssets";
 export default function Dashboard() {
   const { assets, isLoading } = useAssets();
 
-  const totalAssets = assets.length;
-  const totalValue = assets.reduce((sum, asset) => sum + (asset.price || 0), 0);
-  const taggedAssets = assets.filter((a) => a.tagAttached).length;
-  const auctionedAssets = assets.filter((a) => a.deductedAfterAuction).length;
+  // Status counts
+  const activeAssets = assets.filter((a) => a.status === 'active' || !a.status);
+  const discardedAssets = assets.filter((a) => a.status === 'discarded');
+  const stolenAssets = assets.filter((a) => a.status === 'stolen');
+  const auctionedAssets = assets.filter((a) => a.status === 'auctioned' || a.deductedAfterAuction);
+
+  // Total value for active assets only
+  const activeValue = activeAssets.reduce((sum, asset) => sum + (asset.price || 0), 0);
 
   if (isLoading) {
     return (
@@ -29,25 +33,42 @@ export default function Dashboard() {
         {/* Stats Grid */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="Total Assets"
-            value={totalAssets.toLocaleString()}
-            icon={Package}
+            title="Active Assets"
+            value={activeAssets.length.toLocaleString()}
+            icon={CheckCircle}
+            iconColor="bg-emerald-500"
           />
           <StatCard
-            title="Total Value"
-            value={`MVR ${totalValue.toLocaleString()}`}
+            title="Active Value"
+            value={`MVR ${activeValue.toLocaleString()}`}
             icon={Banknote}
-            iconColor="gradient-primary"
+            iconColor="bg-primary"
           />
           <StatCard
-            title="Tagged Assets"
-            value={taggedAssets.toLocaleString()}
-            icon={Tag}
+            title="Discarded"
+            value={discardedAssets.length.toLocaleString()}
+            icon={Trash2}
+            iconColor="bg-slate-500"
           />
           <StatCard
-            title="Deducted (Auction)"
-            value={auctionedAssets.toLocaleString()}
-            icon={AlertTriangle}
+            title="Stolen"
+            value={stolenAssets.length.toLocaleString()}
+            icon={ShieldAlert}
+            iconColor="bg-red-500"
+          />
+        </div>
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Auctioned"
+            value={auctionedAssets.length.toLocaleString()}
+            icon={Gavel}
+            iconColor="bg-amber-500"
+          />
+          <StatCard
+            title="Total Assets"
+            value={assets.length.toLocaleString()}
+            icon={Package}
           />
         </div>
 
