@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { User, Shield, Bell, Database, Users, Plus, Pencil, Trash2, UserPlus, KeyRound } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { User, Shield, Bell, Database, Users, Plus, Pencil, Trash2, UserPlus, KeyRound, Download, Upload, AlertTriangle } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useStaff, Staff } from "@/hooks/useStaff";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAssets } from "@/hooks/useAssets";
 
 interface SystemUser {
   id: string;
@@ -74,6 +75,15 @@ const defaultLdapConfig: LdapConfig = {
 export default function Settings() {
   const { isAdmin, user } = useAuth();
   const { staff, isLoading: staffLoading, addStaff, updateStaff, deleteStaff } = useStaff();
+  const { assets, locations, exportToCSV, importFromCSV, refetch } = useAssets();
+  
+  // Data Management State
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const importFileRef = useRef<HTMLInputElement>(null);
+  const backupFileRef = useRef<HTMLInputElement>(null);
   
   // Staff Management State
   const [isAddStaffDialogOpen, setIsAddStaffDialogOpen] = useState(false);
@@ -550,6 +560,208 @@ export default function Settings() {
     }
   };
 
+  // Data Management Functions
+  const handleExportData = () => {
+    setIsExporting(true);
+    try {
+      exportToCSV();
+      toast({
+        title: "Export Successful",
+        description: `Exported ${assets.length} assets to CSV file.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export data.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleBackupData = () => {
+    setIsExporting(true);
+    try {
+      const backupData = {
+        version: "1.0",
+        exportedAt: new Date().toISOString(),
+        assets: assets,
+        locations: locations,
+        staff: staff,
+      };
+      
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backup_${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Backup Successful",
+        description: `Backed up ${assets.length} assets, ${locations.length} locations, and ${staff.length} staff members.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Backup Failed",
+        description: "Failed to create backup.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      await importFromCSV(file);
+      await refetch();
+      toast({
+        title: "Import Successful",
+        description: "Assets have been imported successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Import Failed",
+        description: "Failed to import data from CSV file.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+      if (importFileRef.current) {
+        importFileRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRestoreBackup = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      const text = await file.text();
+      const backupData = JSON.parse(text);
+
+      if (!backupData.version || !backupData.assets) {
+        throw new Error("Invalid backup file format");
+      }
+
+      // Import assets
+      for (const asset of backupData.assets) {
+        const dbData = {
+          asset_number: asset.assetNumber || "",
+          sap_number: asset.sapNumber || "",
+          model: asset.model || "",
+          brand: asset.brand || "",
+          serial: asset.serial || "",
+          specification: asset.specification || "",
+          item_name: asset.itemName || "",
+          office_number: asset.officeNumber || "",
+          year_number: asset.yearNumber || "",
+          category_number: asset.categoryNumber || "",
+          item_number: asset.itemNumber || "",
+          sequence_number: asset.sequenceNumber || "",
+          location: asset.location || "",
+          sublocation: asset.sublocation || "",
+          price: asset.price || 0,
+          accrued_date: asset.accruedDate || "",
+          purchase_code: asset.purchaseCode || "",
+          voucher_number: asset.voucherNumber || "",
+          deducted_after_auction: asset.deductedAfterAuction || false,
+          auctioned_date: asset.auctionedDate || null,
+          tag_attached: asset.tagAttached || false,
+          quantity: asset.quantity || 1,
+          comments: asset.comments || "",
+          assigned_to: asset.assignedTo || null,
+          image_url: asset.imageUrl || null,
+        };
+
+        await supabase.from("assets").insert([dbData]);
+      }
+
+      // Import locations if present
+      if (backupData.locations) {
+        for (const location of backupData.locations) {
+          const { error } = await supabase
+            .from("locations")
+            .insert([{ name: location.name, sublocations: location.sublocations || [] }]);
+          if (error && !error.message.includes("duplicate")) {
+            console.warn("Location import warning:", error);
+          }
+        }
+      }
+
+      // Import staff if present
+      if (backupData.staff) {
+        for (const member of backupData.staff) {
+          const { error } = await supabase
+            .from("staff")
+            .insert([{
+              name: member.name,
+              email: member.email || null,
+              employee_id: member.employee_id || null,
+              department: member.department || null,
+              position: member.position || null,
+              is_active: member.is_active ?? true,
+            }]);
+          if (error && !error.message.includes("duplicate")) {
+            console.warn("Staff import warning:", error);
+          }
+        }
+      }
+
+      await refetch();
+      toast({
+        title: "Restore Successful",
+        description: `Restored ${backupData.assets.length} assets from backup.`,
+      });
+    } catch (error) {
+      console.error("Restore error:", error);
+      toast({
+        title: "Restore Failed",
+        description: "Failed to restore data from backup file. Please check the file format.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+      if (backupFileRef.current) {
+        backupFileRef.current.value = "";
+      }
+    }
+  };
+
+  const handleClearAllData = async () => {
+    setIsClearing(true);
+    try {
+      // Delete all assets
+      const { error: assetsError } = await supabase.from("assets").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (assetsError) throw assetsError;
+
+      await refetch();
+      setIsClearDialogOpen(false);
+      toast({
+        title: "Data Cleared",
+        description: "All assets have been deleted.",
+      });
+    } catch (error) {
+      console.error("Clear data error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to clear data.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   return (
     <MainLayout title="Settings" subtitle="System configuration and preferences">
       <div className="space-y-6 max-w-4xl">
@@ -840,13 +1052,81 @@ export default function Settings() {
             </div>
             <div>
               <h3 className="font-semibold text-card-foreground">Data Management</h3>
-              <p className="text-sm text-muted-foreground">Backup and restore options</p>
+              <p className="text-sm text-muted-foreground">Backup, restore, and export options</p>
             </div>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline">Export All Data</Button>
-            <Button variant="outline">Import Data</Button>
-            <Button variant="destructive">Clear All Data</Button>
+          
+          {/* Export Section */}
+          <div className="space-y-4">
+            <div className="p-4 rounded-lg border border-border">
+              <h4 className="font-medium text-card-foreground mb-2">Export Data</h4>
+              <p className="text-sm text-muted-foreground mb-3">Download your assets as CSV or create a full backup.</p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={handleExportData} disabled={isExporting || assets.length === 0}>
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "Exporting..." : `Export CSV (${assets.length} assets)`}
+                </Button>
+                <Button variant="outline" onClick={handleBackupData} disabled={isExporting}>
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? "Backing up..." : "Full Backup (JSON)"}
+                </Button>
+              </div>
+            </div>
+
+            {/* Import Section */}
+            <div className="p-4 rounded-lg border border-border">
+              <h4 className="font-medium text-card-foreground mb-2">Import Data</h4>
+              <p className="text-sm text-muted-foreground mb-3">Import assets from CSV file or restore from a backup.</p>
+              <div className="flex flex-wrap gap-2">
+                <input
+                  type="file"
+                  accept=".csv"
+                  ref={importFileRef}
+                  onChange={handleImportCSV}
+                  className="hidden"
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={() => importFileRef.current?.click()}
+                  disabled={isImporting}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {isImporting ? "Importing..." : "Import CSV"}
+                </Button>
+                <input
+                  type="file"
+                  accept=".json"
+                  ref={backupFileRef}
+                  onChange={handleRestoreBackup}
+                  className="hidden"
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={() => backupFileRef.current?.click()}
+                  disabled={isImporting}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {isImporting ? "Restoring..." : "Restore Backup"}
+                </Button>
+              </div>
+            </div>
+
+            {/* Danger Zone */}
+            <div className="p-4 rounded-lg border border-destructive/50 bg-destructive/5">
+              <h4 className="font-medium text-destructive mb-2 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Danger Zone
+              </h4>
+              <p className="text-sm text-muted-foreground mb-3">Permanently delete all asset data. This action cannot be undone.</p>
+              <Button 
+                variant="destructive" 
+                onClick={() => setIsClearDialogOpen(true)}
+                disabled={assets.length === 0}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Clear All Assets ({assets.length})
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -1286,6 +1566,32 @@ export default function Settings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Clear All Data Confirmation Dialog */}
+      <AlertDialog open={isClearDialogOpen} onOpenChange={setIsClearDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Delete All Assets
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete all {assets.length} assets? This action cannot be undone.
+              We recommend creating a backup before proceeding.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isClearing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleClearAllData} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isClearing}
+            >
+              {isClearing ? "Deleting..." : "Delete All Assets"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }
