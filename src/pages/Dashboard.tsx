@@ -1,4 +1,4 @@
-import { Package, Banknote, Tag, AlertTriangle, CheckCircle, Trash2, ShieldAlert, Gavel } from "lucide-react";
+import { Package, Banknote, CheckCircle, Trash2, ShieldAlert, Gavel, ArrowRightLeft } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { RecentAssets } from "@/components/dashboard/RecentAssets";
@@ -10,6 +10,7 @@ export default function Dashboard() {
 
   // Status counts
   const activeAssets = assets.filter((a) => a.status === 'active' || !a.status);
+  const transferredAssets = assets.filter((a) => a.status === 'transferred');
   const discardedAssets = assets.filter((a) => a.status === 'discarded');
   const stolenAssets = assets.filter((a) => a.status === 'stolen');
   const auctionedAssets = assets.filter((a) => a.status === 'auctioned' || a.deductedAfterAuction);
@@ -64,6 +65,12 @@ export default function Dashboard() {
             value={auctionedAssets.length.toLocaleString()}
             icon={Gavel}
             iconColor="bg-amber-500"
+          />
+          <StatCard
+            title="Transferred"
+            value={transferredAssets.length.toLocaleString()}
+            icon={ArrowRightLeft}
+            iconColor="bg-blue-500"
           />
           <StatCard
             title="Total Assets"
