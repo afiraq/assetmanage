@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { User, Shield, Bell, Database, Users, Plus, Pencil, Trash2, UserPlus, KeyRound, Download, Upload, AlertTriangle } from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { User, Shield, Bell, Database, Users, Plus, Pencil, Trash2, UserPlus, KeyRound, Download, Upload, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -86,6 +86,10 @@ export default function Settings() {
   const backupFileRef = useRef<HTMLInputElement>(null);
   const staffImportFileRef = useRef<HTMLInputElement>(null);
   const [isImportingStaff, setIsImportingStaff] = useState(false);
+  
+  // Staff Pagination State
+  const [staffPage, setStaffPage] = useState(1);
+  const staffPerPage = 5;
   
   // Staff Management State
   const [isAddStaffDialogOpen, setIsAddStaffDialogOpen] = useState(false);
@@ -481,6 +485,29 @@ export default function Settings() {
       title: "Staff Deleted",
       description: `${staffToDelete.name} has been removed.`,
     });
+  };
+
+  // Staff pagination
+  const totalStaffPages = Math.ceil(staff.length / staffPerPage);
+  const paginatedStaff = useMemo(() => {
+    const startIndex = (staffPage - 1) * staffPerPage;
+    return staff.slice(startIndex, startIndex + staffPerPage);
+  }, [staff, staffPage]);
+
+  const getStaffPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalStaffPages <= 7) {
+      for (let i = 1; i <= totalStaffPages; i++) pages.push(i);
+    } else {
+      if (staffPage <= 3) {
+        pages.push(1, 2, 3, 4, "...", totalStaffPages);
+      } else if (staffPage >= totalStaffPages - 2) {
+        pages.push(1, "...", totalStaffPages - 3, totalStaffPages - 2, totalStaffPages - 1, totalStaffPages);
+      } else {
+        pages.push(1, "...", staffPage - 1, staffPage, staffPage + 1, "...", totalStaffPages);
+      }
+    }
+    return pages;
   };
 
   // System User Management Functions
@@ -1026,59 +1053,102 @@ export default function Settings() {
               No staff added yet. Click "Add Staff" to create one.
             </div>
           ) : (
-            <div className="rounded-lg border border-border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead>Name</TableHead>
-                    <TableHead>Employee ID</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Position</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {staff.map((member) => (
-                    <TableRow key={member.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{member.name}</p>
-                          {member.email && (
-                            <p className="text-sm text-muted-foreground">{member.email}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{member.employee_id || "-"}</TableCell>
-                      <TableCell>{member.department || "-"}</TableCell>
-                      <TableCell>{member.position || "-"}</TableCell>
-                      <TableCell>
-                        <Badge variant={member.is_active ? "default" : "secondary"}>
-                          {member.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEditStaffClick(member)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteStaffClick(member)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead>Name</TableHead>
+                      <TableHead>Employee ID</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Position</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedStaff.map((member) => (
+                      <TableRow key={member.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{member.name}</p>
+                            {member.email && (
+                              <p className="text-sm text-muted-foreground">{member.email}</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{member.employee_id || "-"}</TableCell>
+                        <TableCell>{member.department || "-"}</TableCell>
+                        <TableCell>{member.position || "-"}</TableCell>
+                        <TableCell>
+                          <Badge variant={member.is_active ? "default" : "secondary"}>
+                            {member.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEditStaffClick(member)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteStaffClick(member)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              {/* Staff Pagination */}
+              {totalStaffPages > 1 && (
+                <div className="flex justify-center items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStaffPage(p => Math.max(1, p - 1))}
+                    disabled={staffPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  {getStaffPageNumbers().map((page, index) => (
+                    typeof page === "number" ? (
+                      <Button
+                        key={index}
+                        variant={staffPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setStaffPage(page)}
+                        className="min-w-[36px]"
+                      >
+                        {page}
+                      </Button>
+                    ) : (
+                      <span key={index} className="px-2 text-muted-foreground">...</span>
+                    )
                   ))}
-                </TableBody>
-              </Table>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStaffPage(p => Math.min(totalStaffPages, p + 1))}
+                    disabled={staffPage === totalStaffPages}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              
+              <p className="text-sm text-muted-foreground text-center">
+                Showing {paginatedStaff.length} of {staff.length} staff members
+              </p>
             </div>
           )}
         </div>
