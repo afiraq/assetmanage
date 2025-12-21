@@ -771,11 +771,11 @@ export default function Settings() {
 
     setIsImporting(true);
     try {
-      await importFromCSV(file);
+      const result = await importFromCSV(file);
       await refetch();
       toast({
-        title: "Import Successful",
-        description: "Assets have been imported successfully.",
+        title: "Import Complete",
+        description: `Successfully imported ${result.imported} assets.${result.failed > 0 ? ` Failed: ${result.failed}` : ''}`,
       });
     } catch (error) {
       toast({
