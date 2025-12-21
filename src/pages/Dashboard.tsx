@@ -13,7 +13,7 @@ export default function Dashboard() {
   const transferredAssets = assets.filter((a) => a.status === 'transferred');
   const discardedAssets = assets.filter((a) => a.status === 'discarded');
   const stolenAssets = assets.filter((a) => a.status === 'stolen');
-  const auctionedAssets = assets.filter((a) => a.status === 'auctioned' || a.deductedAfterAuction);
+  const auctionedAssets = assets.filter((a) => a.status === 'auctioned');
 
   // Total value for active assets only
   const activeValue = activeAssets.reduce((sum, asset) => sum + (asset.price || 0), 0);

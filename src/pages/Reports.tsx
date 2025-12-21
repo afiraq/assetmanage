@@ -38,7 +38,7 @@ export default function Reports() {
       case "brand":
         return assets.filter((a) => a.brand === filterValue);
       case "auctioned":
-        return assets.filter((a) => a.deductedAfterAuction);
+        return assets.filter((a) => a.status === 'auctioned');
       default:
         return assets;
     }
@@ -173,7 +173,7 @@ export default function Reports() {
                     </TableCell>
                     <TableCell className="font-mono">MVR {asset.price.toLocaleString()}</TableCell>
                     <TableCell>
-                      {asset.deductedAfterAuction ? "Auctioned" : asset.tagAttached ? "Tagged" : "Active"}
+                      {asset.status === 'auctioned' ? "Auctioned" : asset.tagAttached ? "Tagged" : asset.status || "Active"}
                     </TableCell>
                   </TableRow>
                 ))
