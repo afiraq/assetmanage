@@ -27,7 +27,28 @@ import { AssetBarcode } from "@/components/assets/AssetBarcode";
 import { AssetImageDialog } from "@/components/assets/AssetImageDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useStaff } from "@/hooks/useStaff";
-import { Asset } from "@/types/asset";
+import { Asset, AssetStatus } from "@/types/asset";
+
+const getStatusBadgeStyles = (status: AssetStatus) => {
+  switch (status) {
+    case "active":
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+    case "transferred":
+      return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+    case "discarded":
+      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+    case "stolen":
+      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+    case "auctioned":
+      return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300";
+    default:
+      return "bg-secondary text-secondary-foreground";
+  }
+};
+
+const getStatusLabel = (status: AssetStatus) => {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+};
 
 export default function Assets() {
   const navigate = useNavigate();
@@ -248,13 +269,13 @@ export default function Assets() {
                       MVR {asset.price.toLocaleString()}
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
+                      <div className="flex flex-wrap gap-1">
+                        <Badge className={`text-xs ${getStatusBadgeStyles(asset.status)}`}>
+                          {getStatusLabel(asset.status)}
+                        </Badge>
                         <Badge variant={asset.tagAttached ? "default" : "secondary"} className="text-xs">
                           {asset.tagAttached ? "Tagged" : "Untagged"}
                         </Badge>
-                        {asset.deductedAfterAuction && (
-                          <Badge variant="destructive" className="text-xs">Auctioned</Badge>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell>

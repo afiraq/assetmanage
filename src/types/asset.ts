@@ -1,3 +1,5 @@
+export type AssetStatus = 'active' | 'transferred' | 'discarded' | 'stolen' | 'auctioned';
+
 export interface Asset {
   id: string;
   assetNumber: string;
@@ -26,6 +28,7 @@ export interface Asset {
   assignedTo: string;
   createdAt: string;
   imageUrl: string | null;
+  status: AssetStatus;
 }
 
 export interface Category {

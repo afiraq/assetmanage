@@ -60,6 +60,7 @@ export default function AddAsset() {
     comments: "",
     assignedTo: "",
     imageUrl: null as string | null,
+    status: "active" as const,
   });
 
   const [generatedAssetNumber, setGeneratedAssetNumber] = useState("");
@@ -164,6 +165,7 @@ export default function AddAsset() {
       assignedTo: formData.assignedTo,
       createdAt: new Date().toISOString(),
       imageUrl: formData.imageUrl,
+      status: formData.status,
     };
 
     const { error } = await addAsset(newAsset);
