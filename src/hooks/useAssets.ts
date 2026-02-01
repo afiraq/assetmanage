@@ -32,6 +32,7 @@ const dbRowToAsset = (row: any): Asset => ({
   createdAt: row.created_at || new Date().toISOString(),
   imageUrl: row.image_url || null,
   status: (row.status as AssetStatus) || "active",
+  assetClass: row.asset_class || "",
 });
 
 // Helper to convert camelCase Asset to snake_case for DB
