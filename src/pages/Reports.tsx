@@ -160,18 +160,21 @@ export default function Reports() {
             <TableHeader>
               <TableRow className="bg-muted/50">
                 <TableHead>Asset Number</TableHead>
+                <TableHead>SAP Number</TableHead>
                 <TableHead>Item Name</TableHead>
+                <TableHead>Asset Class</TableHead>
                 <TableHead>Brand</TableHead>
                 <TableHead>Model</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Price</TableHead>
+                <TableHead>Accrued Date</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredAssets.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                     No assets found for this report
                   </TableCell>
                 </TableRow>
@@ -179,7 +182,9 @@ export default function Reports() {
                 filteredAssets.map((asset) => (
                   <TableRow key={asset.id}>
                     <TableCell className="font-mono text-sm">{asset.assetNumber}</TableCell>
+                    <TableCell className="font-mono text-sm">{asset.sapNumber || "-"}</TableCell>
                     <TableCell className="font-medium">{asset.itemName}</TableCell>
+                    <TableCell>{asset.assetClass || "-"}</TableCell>
                     <TableCell>{asset.brand}</TableCell>
                     <TableCell>{asset.model}</TableCell>
                     <TableCell>
@@ -187,8 +192,15 @@ export default function Reports() {
                       {asset.sublocation && ` / ${asset.sublocation}`}
                     </TableCell>
                     <TableCell className="font-mono">MVR {asset.price.toLocaleString()}</TableCell>
+                    <TableCell>{asset.accruedDate || "-"}</TableCell>
                     <TableCell>
-                      {asset.status === 'auctioned' ? "Auctioned" : asset.tagAttached ? "Tagged" : asset.status || "Active"}
+                      {asset.status === 'auctioned' ? "Auctioned" : 
+                       asset.status === 'out_of_use' ? "Out of Use" :
+                       asset.status === 'damage' ? "Damage" :
+                       asset.status === 'transferred' ? "Transferred" :
+                       asset.status === 'discarded' ? "Discarded" :
+                       asset.status === 'stolen' ? "Stolen" :
+                       "Active"}
                     </TableCell>
                   </TableRow>
                 ))

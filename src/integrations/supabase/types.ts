@@ -17,6 +17,7 @@ export type Database = {
       assets: {
         Row: {
           accrued_date: string | null
+          asset_class: string | null
           asset_number: string
           assigned_to: string | null
           auctioned_date: string | null
@@ -48,6 +49,7 @@ export type Database = {
         }
         Insert: {
           accrued_date?: string | null
+          asset_class?: string | null
           asset_number: string
           assigned_to?: string | null
           auctioned_date?: string | null
@@ -79,6 +81,7 @@ export type Database = {
         }
         Update: {
           accrued_date?: string | null
+          asset_class?: string | null
           asset_number?: string
           assigned_to?: string | null
           auctioned_date?: string | null

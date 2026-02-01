@@ -31,7 +31,7 @@ import { AssetImageUpload } from "@/components/assets/AssetImageUpload";
 
 export default function AddAsset() {
   const navigate = useNavigate();
-  const { addAsset, locations, generateAssetNumber } = useAssets();
+  const { addAsset, locations, assets } = useAssets();
   const { activeStaff, isLoading: staffLoading } = useStaff();
   const { toast } = useToast();
 
@@ -59,7 +59,8 @@ export default function AddAsset() {
     comments: "",
     assignedTo: "",
     imageUrl: null as string | null,
-    status: "active" as const,
+    status: "active" as "active" | "transferred" | "discarded" | "stolen" | "auctioned" | "out_of_use" | "damage",
+    assetClass: "",
   });
 
   const [generatedAssetNumber, setGeneratedAssetNumber] = useState("");
@@ -68,6 +69,20 @@ export default function AddAsset() {
   const [customItemNames, setCustomItemNames] = useState<string[]>([]);
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const [newItemName, setNewItemName] = useState("");
+
+  // Calculate the last sequence number for the selected item name
+  const getLastSequenceNumber = () => {
+    if (!formData.itemName) return null;
+    const matchingAssets = assets.filter(a => a.itemName === formData.itemName);
+    if (matchingAssets.length === 0) return null;
+    const sequenceNumbers = matchingAssets
+      .map(a => parseInt(a.sequenceNumber) || 0)
+      .filter(n => !isNaN(n));
+    if (sequenceNumbers.length === 0) return null;
+    return Math.max(...sequenceNumbers);
+  };
+
+  const lastSequenceNumber = getLastSequenceNumber();
 
   // Update asset number when codes change
   useEffect(() => {
@@ -164,6 +179,7 @@ export default function AddAsset() {
       createdAt: new Date().toISOString(),
       imageUrl: formData.imageUrl,
       status: formData.status,
+      assetClass: formData.assetClass,
     };
 
     const { error } = await addAsset(newAsset);
@@ -251,10 +267,17 @@ export default function AddAsset() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sequenceNumber">Sequence Number *</Label>
+              <Label htmlFor="sequenceNumber">
+                Sequence Number *
+                {lastSequenceNumber !== null && (
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    (Last: {lastSequenceNumber.toString().padStart(2, '0')})
+                  </span>
+                )}
+              </Label>
               <Input
                 id="sequenceNumber"
-                placeholder="e.g., 01"
+                placeholder={lastSequenceNumber !== null ? `Next: ${(lastSequenceNumber + 1).toString().padStart(2, '0')}` : "e.g., 01"}
                 value={formData.sequenceNumber}
                 onChange={(e) => updateField("sequenceNumber", e.target.value)}
                 required
@@ -337,6 +360,35 @@ export default function AddAsset() {
                 value={formData.quantity}
                 onChange={(e) => updateField("quantity", e.target.value)}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => updateField("status", value)}
+              >
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="transferred">Transferred</SelectItem>
+                  <SelectItem value="discarded">Discarded</SelectItem>
+                  <SelectItem value="stolen">Stolen</SelectItem>
+                  <SelectItem value="auctioned">Auctioned</SelectItem>
+                  <SelectItem value="out_of_use">Out of Use</SelectItem>
+                  <SelectItem value="damage">Damage</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="assetClass">Asset Class</Label>
+              <Input
+                id="assetClass"
+                placeholder="Enter asset class"
+                value={formData.assetClass}
+                onChange={(e) => updateField("assetClass", e.target.value)}
               />
             </div>
             <div className="space-y-2">
