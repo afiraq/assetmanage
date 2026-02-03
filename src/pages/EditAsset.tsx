@@ -63,6 +63,7 @@ export default function EditAsset() {
     assignedTo: "",
     imageUrl: null as string | null,
     status: "active" as AssetStatus,
+    assetClass: "",
   });
 
   const [subcategories, setSubcategories] = useState<{ code: string; name: string }[]>([]);
@@ -109,6 +110,7 @@ export default function EditAsset() {
         assignedTo: asset.assignedTo || "",
         imageUrl: asset.imageUrl || null,
         status: asset.status || "active",
+        assetClass: asset.assetClass || "",
       });
     }
   }, [asset]);
@@ -165,6 +167,7 @@ export default function EditAsset() {
       assignedTo: formData.assignedTo,
       imageUrl: formData.imageUrl,
       status: formData.status,
+      assetClass: formData.assetClass,
     });
 
     if (!error) {
@@ -533,8 +536,19 @@ export default function EditAsset() {
                   <SelectItem value="discarded">Discarded</SelectItem>
                   <SelectItem value="stolen">Stolen</SelectItem>
                   <SelectItem value="auctioned">Auctioned</SelectItem>
+                  <SelectItem value="out_of_use">Out of Use</SelectItem>
+                  <SelectItem value="damage">Damaged</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="assetClass">Asset Class</Label>
+              <Input
+                id="assetClass"
+                placeholder="Enter asset class"
+                value={formData.assetClass}
+                onChange={(e) => updateField("assetClass", e.target.value)}
+              />
             </div>
             <div className="flex items-center space-x-3 rounded-lg border border-border p-4">
               <Checkbox
