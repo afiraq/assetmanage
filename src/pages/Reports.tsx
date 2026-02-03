@@ -20,7 +20,7 @@ import {
 import { useAssets } from "@/hooks/useAssets";
 import { categories } from "@/data/categories";
 
-type ReportType = "all" | "location" | "category" | "brand" | "auctioned" | "stolen" | "transferred" | "discarded";
+type ReportType = "all" | "location" | "category" | "brand" | "itemName" | "auctioned" | "stolen" | "transferred" | "discarded";
 
 export default function Reports() {
   const { assets, locations, exportToCSV } = useAssets();
@@ -43,6 +43,8 @@ export default function Reports() {
         return assets.filter((a) => a.categoryNumber === filterValue);
       case "brand":
         return assets.filter((a) => a.brand === filterValue);
+      case "itemName":
+        return assets.filter((a) => a.itemName === filterValue);
       case "auctioned":
         return assets.filter((a) => a.status === 'auctioned');
       case "stolen":
@@ -58,6 +60,7 @@ export default function Reports() {
 
   const filteredAssets = getFilteredAssets();
   const uniqueBrands = [...new Set(assets.map((a) => a.brand).filter(Boolean))];
+  const uniqueItemNames = [...new Set(assets.map((a) => a.itemName).filter(Boolean))].sort();
 
   const getFilterOptions = () => {
     switch (reportType) {
@@ -67,6 +70,8 @@ export default function Reports() {
         return categories.map((c) => ({ value: c.code, label: `${c.code} - ${c.name}` }));
       case "brand":
         return uniqueBrands.map((b) => ({ value: b, label: b }));
+      case "itemName":
+        return uniqueItemNames.map((n) => ({ value: n, label: n }));
       default:
         return [];
     }
@@ -96,6 +101,7 @@ export default function Reports() {
                   <SelectItem value="location">By Location</SelectItem>
                   <SelectItem value="category">By Category</SelectItem>
                   <SelectItem value="brand">By Brand</SelectItem>
+                  <SelectItem value="itemName">By Item Name</SelectItem>
                   <SelectItem value="auctioned">Auctioned Assets</SelectItem>
                   <SelectItem value="stolen">Stolen Assets</SelectItem>
                   <SelectItem value="transferred">Transferred Assets</SelectItem>
