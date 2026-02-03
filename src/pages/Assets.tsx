@@ -41,12 +41,18 @@ const getStatusBadgeStyles = (status: AssetStatus) => {
       return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
     case "auctioned":
       return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300";
+    case "out_of_use":
+      return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
+    case "damage":
+      return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300";
     default:
       return "bg-secondary text-secondary-foreground";
   }
 };
 
 const getStatusLabel = (status: AssetStatus) => {
+  if (status === "out_of_use") return "Out of Use";
+  if (status === "damage") return "Damaged";
   return status.charAt(0).toUpperCase() + status.slice(1);
 };
 
@@ -197,6 +203,8 @@ export default function Assets() {
                 <SelectItem value="discarded">Discarded</SelectItem>
                 <SelectItem value="stolen">Stolen</SelectItem>
                 <SelectItem value="auctioned">Auctioned</SelectItem>
+                <SelectItem value="out_of_use">Out of Use</SelectItem>
+                <SelectItem value="damage">Damaged</SelectItem>
               </SelectContent>
             </Select>
           </div>
