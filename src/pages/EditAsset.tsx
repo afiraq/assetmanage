@@ -406,6 +406,15 @@ export default function EditAsset() {
                 </Select>
               )}
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="assetClass">Asset Class</Label>
+              <Input
+                id="assetClass"
+                placeholder="Enter asset class"
+                value={formData.assetClass}
+                onChange={(e) => updateField("assetClass", e.target.value)}
+              />
+            </div>
           </div>
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="space-y-2">
@@ -540,15 +549,6 @@ export default function EditAsset() {
                   <SelectItem value="damage">Damaged</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="assetClass">Asset Class</Label>
-              <Input
-                id="assetClass"
-                placeholder="Enter asset class"
-                value={formData.assetClass}
-                onChange={(e) => updateField("assetClass", e.target.value)}
-              />
             </div>
             <div className="flex items-center space-x-3 rounded-lg border border-border p-4">
               <Checkbox
