@@ -70,10 +70,10 @@ export default function AddAsset() {
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const [newItemName, setNewItemName] = useState("");
 
-  // Calculate the last sequence number for the selected item name
+  // Calculate the last/highest sequence number for the selected category
   const getLastSequenceNumber = () => {
-    if (!formData.itemName) return null;
-    const matchingAssets = assets.filter(a => a.itemName === formData.itemName);
+    if (!formData.categoryNumber) return null;
+    const matchingAssets = assets.filter(a => a.categoryNumber === formData.categoryNumber);
     if (matchingAssets.length === 0) return null;
     const sequenceNumbers = matchingAssets
       .map(a => parseInt(a.sequenceNumber) || 0)
@@ -269,15 +269,15 @@ export default function AddAsset() {
             <div className="space-y-2">
               <Label htmlFor="sequenceNumber">
                 Sequence Number *
-                {lastSequenceNumber !== null && (
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">
-                    (Last: {lastSequenceNumber.toString().padStart(2, '0')})
-                  </span>
-                )}
               </Label>
+              {lastSequenceNumber !== null && (
+                <div className="text-sm font-medium text-primary bg-primary/10 px-3 py-1.5 rounded-md inline-block">
+                  Last used: {lastSequenceNumber.toString().padStart(2, '0')} → Next: {(lastSequenceNumber + 1).toString().padStart(2, '0')}
+                </div>
+              )}
               <Input
                 id="sequenceNumber"
-                placeholder={lastSequenceNumber !== null ? `Next: ${(lastSequenceNumber + 1).toString().padStart(2, '0')}` : "e.g., 01"}
+                placeholder={lastSequenceNumber !== null ? `Suggested: ${(lastSequenceNumber + 1).toString().padStart(2, '0')}` : "e.g., 01"}
                 value={formData.sequenceNumber}
                 onChange={(e) => updateField("sequenceNumber", e.target.value)}
                 required
