@@ -307,7 +307,7 @@ export function useAssets() {
     if (assets.length === 0) return;
 
     const headers = [
-      "assetNumber", "sapNumber", "itemName", "brand", "model", "serial",
+      "assetNumber", "sapNumber", "itemName", "assetClass", "brand", "model", "serial",
       "specification", "officeNumber", "yearNumber", "categoryNumber",
       "itemNumber", "sequenceNumber", "location", "sublocation", "price",
       "accruedDate", "purchaseCode", "voucherNumber", "auctionedDate",
