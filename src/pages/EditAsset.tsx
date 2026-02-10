@@ -73,6 +73,7 @@ export default function EditAsset() {
   const [newItemName, setNewItemName] = useState("");
   const [appUsers, setAppUsers] = useState<{ id: string; name: string }[]>([]);
   const userChangedLocation = useRef(false);
+  const hasLoadedAsset = useRef(false);
 
   // Load users from localStorage
   useEffect(() => {
@@ -83,9 +84,10 @@ export default function EditAsset() {
     }
   }, []);
 
-  // Load asset data when found
+  // Load asset data only once when first available
   useEffect(() => {
-    if (asset) {
+    if (asset && !hasLoadedAsset.current) {
+      hasLoadedAsset.current = true;
       userChangedLocation.current = false;
       setFormData({
         sapNumber: asset.sapNumber || "",
