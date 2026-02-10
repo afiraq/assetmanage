@@ -468,9 +468,9 @@ export default function EditAsset() {
               <div className="space-y-2">
                 <Label htmlFor="sublocation">Sublocation</Label>
                 <Select
-                  value={formData.sublocation}
+                  value={formData.sublocation || undefined}
                   onValueChange={(value) => updateField("sublocation", value)}
-                  disabled={sublocations.length === 0}
+                  disabled={sublocations.length === 0 && !formData.sublocation}
                 >
                   <SelectTrigger id="sublocation">
                     <SelectValue placeholder={sublocations.length === 0 ? "Select location first" : "Select sublocation"} />
