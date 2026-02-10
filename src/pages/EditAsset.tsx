@@ -72,7 +72,7 @@ export default function EditAsset() {
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [appUsers, setAppUsers] = useState<{ id: string; name: string }[]>([]);
-  const isInitialLoad = useRef(true);
+  const userChangedLocation = useRef(false);
 
   // Load users from localStorage
   useEffect(() => {
@@ -86,7 +86,7 @@ export default function EditAsset() {
   // Load asset data when found
   useEffect(() => {
     if (asset) {
-      isInitialLoad.current = true;
+      userChangedLocation.current = false;
       setFormData({
         sapNumber: asset.sapNumber || "",
         model: asset.model || "",
@@ -127,9 +127,7 @@ export default function EditAsset() {
   useEffect(() => {
     const location = locations.find((l) => l.name === formData.location);
     setSublocations(location?.sublocations || []);
-    if (isInitialLoad.current) {
-      isInitialLoad.current = false;
-    } else {
+    if (userChangedLocation.current) {
       setFormData((prev) => ({ ...prev, sublocation: "" }));
     }
   }, [formData.location, locations]);
@@ -451,7 +449,7 @@ export default function EditAsset() {
                 <Label htmlFor="location">Location *</Label>
                 <Select
                   value={formData.location}
-                  onValueChange={(value) => updateField("location", value)}
+                  onValueChange={(value) => { userChangedLocation.current = true; updateField("location", value); }}
                 >
                   <SelectTrigger id="location">
                     <SelectValue placeholder="Select location" />
