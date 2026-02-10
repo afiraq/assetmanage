@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Save, ArrowLeft, Barcode, Plus } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -72,6 +72,7 @@ export default function EditAsset() {
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [appUsers, setAppUsers] = useState<{ id: string; name: string }[]>([]);
+  const isInitialLoad = useRef(true);
 
   // Load users from localStorage
   useEffect(() => {
@@ -85,6 +86,7 @@ export default function EditAsset() {
   // Load asset data when found
   useEffect(() => {
     if (asset) {
+      isInitialLoad.current = true;
       setFormData({
         sapNumber: asset.sapNumber || "",
         model: asset.model || "",
@@ -125,6 +127,11 @@ export default function EditAsset() {
   useEffect(() => {
     const location = locations.find((l) => l.name === formData.location);
     setSublocations(location?.sublocations || []);
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false;
+    } else {
+      setFormData((prev) => ({ ...prev, sublocation: "" }));
+    }
   }, [formData.location, locations]);
 
   const handleSubmit = async (e: React.FormEvent) => {
