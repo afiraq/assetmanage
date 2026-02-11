@@ -269,13 +269,14 @@ export default function EditAsset() {
             <div className="space-y-2">
               <Label htmlFor="categoryNumber">Category *</Label>
               <Select
-                value={formData.categoryNumber || undefined}
-                onValueChange={(value) => updateField("categoryNumber", value)}
+                value={formData.categoryNumber || "__none__"}
+                onValueChange={(value) => updateField("categoryNumber", value === "__none__" ? "" : value)}
               >
                 <SelectTrigger id="categoryNumber">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__" disabled>Select category</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.code}>
                       {cat.code} - {cat.name}
@@ -324,10 +325,12 @@ export default function EditAsset() {
               <Label htmlFor="itemName">Item Name *</Label>
               <div className="flex gap-2">
                 <Select
-                  value={formData.itemName || undefined}
+                  value={formData.itemName || "__none__"}
                   onValueChange={(value) => {
                     if (value === "__add_new__") {
                       setShowAddItemDialog(true);
+                    } else if (value === "__none__") {
+                      return;
                     } else {
                       updateField("itemName", value);
                     }
@@ -337,6 +340,7 @@ export default function EditAsset() {
                     <SelectValue placeholder={subcategories.length === 0 && customItemNames.length === 0 ? "Select category first" : "Select item name"} />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="__none__" disabled>Select item name</SelectItem>
                     {allItemNames.map((name, index) => (
                       <SelectItem key={`${name}-${index}`} value={name}>
                         {name}
@@ -452,13 +456,18 @@ export default function EditAsset() {
               <div className="space-y-2">
                 <Label htmlFor="location">Location *</Label>
                 <Select
-                  value={formData.location || undefined}
-                  onValueChange={(value) => { userChangedLocation.current = true; updateField("location", value); }}
+                  value={formData.location || "__none__"}
+                  onValueChange={(value) => { 
+                    if (value === "__none__") return;
+                    userChangedLocation.current = true; 
+                    updateField("location", value); 
+                  }}
                 >
                   <SelectTrigger id="location">
                     <SelectValue placeholder="Select location" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="__none__" disabled>Select location</SelectItem>
                     {locations.map((loc) => (
                       <SelectItem key={loc.id} value={loc.name}>
                         {loc.name}
@@ -470,14 +479,18 @@ export default function EditAsset() {
               <div className="space-y-2">
                 <Label htmlFor="sublocation">Sublocation</Label>
                 <Select
-                  value={formData.sublocation || undefined}
-                  onValueChange={(value) => updateField("sublocation", value)}
+                  value={formData.sublocation || "__none__"}
+                  onValueChange={(value) => updateField("sublocation", value === "__none__" ? "" : value)}
                   disabled={sublocations.length === 0 && !formData.sublocation}
                 >
                   <SelectTrigger id="sublocation">
                     <SelectValue placeholder={sublocations.length === 0 ? "Select location first" : "Select sublocation"} />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="__none__" disabled>Select sublocation</SelectItem>
+                    {formData.sublocation && !sublocations.includes(formData.sublocation) && (
+                      <SelectItem value={formData.sublocation}>{formData.sublocation}</SelectItem>
+                    )}
                     {sublocations.map((sub) => (
                       <SelectItem key={sub} value={sub}>
                         {sub}
