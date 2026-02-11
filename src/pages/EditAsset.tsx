@@ -117,6 +117,10 @@ export default function EditAsset() {
         assetClass: asset.assetClass || "",
       });
     }
+    // Reset on cleanup so React StrictMode double-mount works correctly
+    return () => {
+      hasLoadedAsset.current = false;
+    };
   }, [asset]);
 
   // Update subcategories when category changes
