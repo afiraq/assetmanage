@@ -89,6 +89,11 @@ export default function EditAsset() {
     if (asset && !hasLoadedAsset.current) {
       hasLoadedAsset.current = true;
       userChangedLocation.current = false;
+      // Normalize category number to match zero-padded category codes (e.g., "2" -> "02")
+      const normalizedCategoryNumber = asset.categoryNumber 
+        ? asset.categoryNumber.padStart(2, '0') 
+        : "";
+      
       setFormData({
         sapNumber: asset.sapNumber || "",
         model: asset.model || "",
@@ -98,7 +103,7 @@ export default function EditAsset() {
         itemName: asset.itemName || "",
         officeNumber: asset.officeNumber || "",
         yearNumber: asset.yearNumber || "",
-        categoryNumber: asset.categoryNumber || "",
+        categoryNumber: normalizedCategoryNumber,
         itemNumber: asset.itemNumber || "",
         sequenceNumber: asset.sequenceNumber || "",
         location: asset.location || "",
