@@ -206,6 +206,8 @@ export default function EditAsset() {
   const allItemNames = [
     ...subcategories.map((sub) => sub.name),
     ...customItemNames,
+    // Include the current item name if it's not already in the list
+    ...(formData.itemName && !subcategories.some(s => s.name === formData.itemName) && !customItemNames.includes(formData.itemName) ? [formData.itemName] : []),
   ].filter(name => name && name.trim() !== "");
 
   if (!asset) {
@@ -267,7 +269,7 @@ export default function EditAsset() {
             <div className="space-y-2">
               <Label htmlFor="categoryNumber">Category *</Label>
               <Select
-                value={formData.categoryNumber}
+                value={formData.categoryNumber || undefined}
                 onValueChange={(value) => updateField("categoryNumber", value)}
               >
                 <SelectTrigger id="categoryNumber">
@@ -322,7 +324,7 @@ export default function EditAsset() {
               <Label htmlFor="itemName">Item Name *</Label>
               <div className="flex gap-2">
                 <Select
-                  value={formData.itemName}
+                  value={formData.itemName || undefined}
                   onValueChange={(value) => {
                     if (value === "__add_new__") {
                       setShowAddItemDialog(true);
@@ -450,7 +452,7 @@ export default function EditAsset() {
               <div className="space-y-2">
                 <Label htmlFor="location">Location *</Label>
                 <Select
-                  value={formData.location}
+                  value={formData.location || undefined}
                   onValueChange={(value) => { userChangedLocation.current = true; updateField("location", value); }}
                 >
                   <SelectTrigger id="location">
