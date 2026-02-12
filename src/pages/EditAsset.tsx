@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Save, ArrowLeft, Barcode, Plus } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -66,8 +66,17 @@ export default function EditAsset() {
     assetClass: "",
   });
 
-  const [subcategories, setSubcategories] = useState<{ code: string; name: string }[]>([]);
-  const [sublocations, setSublocations] = useState<string[]>([]);
+  // Compute subcategories and sublocations synchronously (not via useEffect)
+  // so they're available immediately when Select components render
+  const subcategories = useMemo(() => {
+    const category = categories.find((c) => c.code === formData.categoryNumber);
+    return category?.subcategories || [];
+  }, [formData.categoryNumber]);
+
+  const sublocations = useMemo(() => {
+    const location = locations.find((l) => l.name === formData.location);
+    return location?.sublocations || [];
+  }, [formData.location, locations]);
   const [customItemNames, setCustomItemNames] = useState<string[]>([]);
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
   const [newItemName, setNewItemName] = useState("");
@@ -132,28 +141,12 @@ export default function EditAsset() {
     }
   }, [asset, loadedAssetId]);
 
-  // Update subcategories when category changes
+  // Reset sublocation only when user manually changes location
   useEffect(() => {
-    const category = categories.find((c) => c.code === formData.categoryNumber);
-    setSubcategories(category?.subcategories || []);
-  }, [formData.categoryNumber]);
-
-  // Update sublocations when location changes
-  useEffect(() => {
-    const location = locations.find((l) => l.name === formData.location);
-    const newSublocations = location?.sublocations || [];
-    console.log("[EditAsset] Location effect:", {
-      location: formData.location,
-      sublocation: formData.sublocation,
-      foundLocation: !!location,
-      sublocationsCount: newSublocations.length,
-      userChanged: userChangedLocation.current,
-    });
-    setSublocations(newSublocations);
     if (userChangedLocation.current) {
       setFormData((prev) => ({ ...prev, sublocation: "" }));
     }
-  }, [formData.location, locations]);
+  }, [formData.location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
