@@ -72,8 +72,8 @@ export default function EditAsset() {
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [appUsers, setAppUsers] = useState<{ id: string; name: string }[]>([]);
+  const [loadedAssetId, setLoadedAssetId] = useState<string | null>(null);
   const userChangedLocation = useRef(false);
-  const hasLoadedAsset = useRef(false);
 
   // Load users from localStorage
   useEffect(() => {
@@ -84,15 +84,23 @@ export default function EditAsset() {
     }
   }, []);
 
-  // Load asset data only once when first available
+  // Load asset data only once when first available (using state instead of ref for StrictMode safety)
   useEffect(() => {
-    if (asset && !hasLoadedAsset.current) {
-      hasLoadedAsset.current = true;
+    if (asset && asset.id !== loadedAssetId) {
+      setLoadedAssetId(asset.id);
       userChangedLocation.current = false;
       // Normalize category number to match zero-padded category codes (e.g., "2" -> "02")
       const normalizedCategoryNumber = asset.categoryNumber 
         ? asset.categoryNumber.padStart(2, '0') 
         : "";
+      
+      console.log("[EditAsset] Loading asset data:", {
+        itemName: asset.itemName,
+        location: asset.location,
+        sublocation: asset.sublocation,
+        categoryNumber: asset.categoryNumber,
+        normalizedCategoryNumber,
+      });
       
       setFormData({
         sapNumber: asset.sapNumber || "",
@@ -122,11 +130,7 @@ export default function EditAsset() {
         assetClass: asset.assetClass || "",
       });
     }
-    // Reset on cleanup so React StrictMode double-mount works correctly
-    return () => {
-      hasLoadedAsset.current = false;
-    };
-  }, [asset]);
+  }, [asset, loadedAssetId]);
 
   // Update subcategories when category changes
   useEffect(() => {
@@ -137,7 +141,15 @@ export default function EditAsset() {
   // Update sublocations when location changes
   useEffect(() => {
     const location = locations.find((l) => l.name === formData.location);
-    setSublocations(location?.sublocations || []);
+    const newSublocations = location?.sublocations || [];
+    console.log("[EditAsset] Location effect:", {
+      location: formData.location,
+      sublocation: formData.sublocation,
+      foundLocation: !!location,
+      sublocationsCount: newSublocations.length,
+      userChanged: userChangedLocation.current,
+    });
+    setSublocations(newSublocations);
     if (userChangedLocation.current) {
       setFormData((prev) => ({ ...prev, sublocation: "" }));
     }
@@ -219,15 +231,14 @@ export default function EditAsset() {
     ...(formData.itemName && !subcategories.some(s => s.name === formData.itemName) && !customItemNames.includes(formData.itemName) ? [formData.itemName] : []),
   ].filter(name => name && name.trim() !== "");
 
-  if (!asset) {
+  // Don't render the form until asset data has been loaded into formData
+  if (!asset || !loadedAssetId) {
     return (
-      <MainLayout title="Edit Asset" subtitle="Asset not found">
-        <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">The requested asset could not be found.</p>
-          <Button onClick={() => navigate("/assets")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Assets
-          </Button>
+      <MainLayout title="Edit Asset" subtitle="Loading asset...">
+        <div className="space-y-8">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-64 w-full" />
         </div>
       </MainLayout>
     );
@@ -334,6 +345,7 @@ export default function EditAsset() {
               <Label htmlFor="itemName">Item Name *</Label>
               <div className="flex gap-2">
                 <Select
+                  key={`itemName-${formData.categoryNumber}`}
                   value={formData.itemName || "__none__"}
                   onValueChange={(value) => {
                     if (value === "__add_new__") {
@@ -488,6 +500,7 @@ export default function EditAsset() {
               <div className="space-y-2">
                 <Label htmlFor="sublocation">Sublocation</Label>
                 <Select
+                  key={`sublocation-${formData.location}-${loadedAssetId}`}
                   value={formData.sublocation || "__none__"}
                   onValueChange={(value) => updateField("sublocation", value === "__none__" ? "" : value)}
                   disabled={sublocations.length === 0 && !formData.sublocation}
