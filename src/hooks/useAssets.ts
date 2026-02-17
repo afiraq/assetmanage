@@ -63,6 +63,7 @@ const assetToDbRow = (asset: Partial<Asset>) => ({
   ...(asset.assignedTo !== undefined && { assigned_to: asset.assignedTo || null }),
   ...(asset.imageUrl !== undefined && { image_url: asset.imageUrl }),
   ...(asset.status !== undefined && { status: asset.status }),
+  ...(asset.assetClass !== undefined && { asset_class: asset.assetClass }),
 });
 
 export function useAssets() {
