@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useStaff } from "@/hooks/useStaff";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AssetImageUpload } from "@/components/assets/AssetImageUpload";
+import { StaffCombobox } from "@/components/assets/StaffCombobox";
 import { AssetStatus } from "@/types/asset";
 
 export default function EditAsset() {
