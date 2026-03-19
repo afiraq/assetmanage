@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useStaff } from "@/hooks/useStaff";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AssetImageUpload } from "@/components/assets/AssetImageUpload";
+import { StaffCombobox } from "@/components/assets/StaffCombobox";
 
 export default function AddAsset() {
   const navigate = useNavigate();
