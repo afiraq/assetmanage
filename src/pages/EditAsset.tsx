@@ -415,23 +415,11 @@ export default function EditAsset() {
               {staffLoading ? (
                 <Skeleton className="h-10 w-full" />
               ) : (
-                <Select
-                  value={formData.assignedTo || "__none__"}
-                  onValueChange={(value) => updateField("assignedTo", value === "__none__" ? "" : value)}
-                >
-                  <SelectTrigger id="assignedTo">
-                    <SelectValue placeholder="Select staff member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Not Assigned</SelectItem>
-                    {activeStaff.map((member) => (
-                      <SelectItem key={member.id} value={member.id}>
-                        {member.name}
-                        {member.department && ` (${member.department})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <StaffCombobox
+                  staff={activeStaff}
+                  value={formData.assignedTo}
+                  onValueChange={(value) => updateField("assignedTo", value)}
+                />
               )}
             </div>
             <div className="space-y-2">
