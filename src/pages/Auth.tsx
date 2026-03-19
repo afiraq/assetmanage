@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Package, LogIn, UserPlus, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Package, Mail, Lock, User, ArrowRight } from "lucide-react";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Invalid email address");
@@ -19,11 +19,8 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
 
-  // Login form state
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-
-  // Signup form state
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupName, setSignupName] = useState("");
@@ -89,125 +86,94 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left panel - branding */}
-      <div className="hidden lg:flex lg:w-1/2 gradient-dark relative overflow-hidden items-center justify-center p-12">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-primary blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full bg-accent blur-3xl" />
+    <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
+        <div className="flex flex-col items-center mb-10">
+          <div className="w-12 h-12 rounded-xl bg-foreground flex items-center justify-center mb-4">
+            <Package className="h-6 w-6 text-background" />
+          </div>
+          <h1 className="text-lg font-semibold text-foreground">Asset Management</h1>
         </div>
-        <div className="relative z-10 text-center space-y-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl gradient-primary shadow-glow">
-            <Package className="h-10 w-10 text-primary-foreground" />
-          </div>
-          <div className="space-y-3">
-            <h1 className="text-4xl font-bold text-primary-foreground tracking-tight">
-              Asset Management
-            </h1>
-            <p className="text-lg text-primary-foreground/60 max-w-sm mx-auto">
-              Track, manage, and optimize your organization's assets with ease.
-            </p>
-          </div>
-          <div className="flex items-center justify-center gap-8 pt-4">
-            {[
-              { label: "Assets Tracked", value: "10K+" },
-              { label: "Organizations", value: "500+" },
-              { label: "Uptime", value: "99.9%" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-2xl font-bold text-primary-foreground">{stat.value}</div>
-                <div className="text-xs text-primary-foreground/50 uppercase tracking-wider">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
-      {/* Right panel - form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-background">
-        <div className="w-full max-w-md space-y-8">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center justify-center gap-3">
-            <div className="p-2.5 rounded-xl gradient-primary shadow-glow">
-              <Package className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">Asset Management</span>
-          </div>
-
+        {/* Card */}
+        <div className="bg-card rounded-2xl border border-border p-8 shadow-sm">
           {/* Header */}
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-foreground">
-              {activeTab === "login" ? "Welcome back" : "Create account"}
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-semibold text-foreground">
+              {activeTab === "login" ? "Sign in" : "Create account"}
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground mt-1">
               {activeTab === "login"
-                ? "Enter your credentials to access your account"
+                ? "Enter your email and password"
                 : "Fill in your details to get started"}
             </p>
           </div>
 
           {/* Tab switcher */}
-          <div className="flex rounded-lg bg-muted p-1 gap-1">
+          <div className="flex border border-border rounded-lg p-0.5 mb-6">
             <button
               onClick={() => setActiveTab("login")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm font-medium transition-all ${
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
                 activeTab === "login"
-                  ? "bg-background text-foreground shadow-sm"
+                  ? "bg-foreground text-background"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <LogIn className="h-4 w-4" />
               Login
             </button>
             <button
               onClick={() => setActiveTab("signup")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm font-medium transition-all ${
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
                 activeTab === "signup"
-                  ? "bg-background text-foreground shadow-sm"
+                  ? "bg-foreground text-background"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <UserPlus className="h-4 w-4" />
               Sign Up
             </button>
           </div>
 
           {/* Login form */}
           {activeTab === "login" && (
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="login-email" className="text-foreground">Email</Label>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="login-email" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Email
+                </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
                   <Input
                     id="login-email"
                     type="email"
                     placeholder="name@company.com"
-                    className="pl-10"
+                    className="pl-10 h-11 bg-muted/50 border-border"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     required
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="login-password" className="text-foreground">Password</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="login-password" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Password
+                </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
                   <Input
                     id="login-password"
                     type="password"
                     placeholder="••••••••"
-                    className="pl-10"
+                    className="pl-10 h-11 bg-muted/50 border-border"
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     required
                   />
                 </div>
               </div>
-              <Button type="submit" className="w-full h-11 gap-2" disabled={isLoading}>
-                {isLoading ? "Logging in..." : (
-                  <>Sign in <ArrowRight className="h-4 w-4" /></>
+              <Button type="submit" className="w-full h-11 mt-2 bg-foreground text-background hover:bg-foreground/90" disabled={isLoading}>
+                {isLoading ? "Signing in..." : (
+                  <>Sign in <ArrowRight className="h-4 w-4 ml-1" /></>
                 )}
               </Button>
             </form>
@@ -215,60 +181,70 @@ export default function Auth() {
 
           {/* Signup form */}
           {activeTab === "signup" && (
-            <form onSubmit={handleSignup} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="signup-name" className="text-foreground">Full Name</Label>
+            <form onSubmit={handleSignup} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="signup-name" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Full Name
+                </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
                   <Input
                     id="signup-name"
                     type="text"
                     placeholder="John Doe"
-                    className="pl-10"
+                    className="pl-10 h-11 bg-muted/50 border-border"
                     value={signupName}
                     onChange={(e) => setSignupName(e.target.value)}
                     required
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-email" className="text-foreground">Email</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="signup-email" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Email
+                </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
                   <Input
                     id="signup-email"
                     type="email"
                     placeholder="name@company.com"
-                    className="pl-10"
+                    className="pl-10 h-11 bg-muted/50 border-border"
                     value={signupEmail}
                     onChange={(e) => setSignupEmail(e.target.value)}
                     required
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-password" className="text-foreground">Password</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="signup-password" className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Password
+                </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
                   <Input
                     id="signup-password"
                     type="password"
                     placeholder="Min 6 characters"
-                    className="pl-10"
+                    className="pl-10 h-11 bg-muted/50 border-border"
                     value={signupPassword}
                     onChange={(e) => setSignupPassword(e.target.value)}
                     required
                   />
                 </div>
               </div>
-              <Button type="submit" className="w-full h-11 gap-2" disabled={isLoading}>
+              <Button type="submit" className="w-full h-11 mt-2 bg-foreground text-background hover:bg-foreground/90" disabled={isLoading}>
                 {isLoading ? "Creating account..." : (
-                  <>Create Account <ArrowRight className="h-4 w-4" /></>
+                  <>Create Account <ArrowRight className="h-4 w-4 ml-1" /></>
                 )}
               </Button>
             </form>
           )}
         </div>
+
+        <p className="text-center text-xs text-muted-foreground mt-6">
+          Secure asset tracking for your organization
+        </p>
       </div>
     </div>
   );
