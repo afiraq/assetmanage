@@ -244,7 +244,7 @@ export default function Auth() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-6">
-          Secure asset tracking for your organization
+          ©2026 LGA
         </p>
       </div>
     </div>
