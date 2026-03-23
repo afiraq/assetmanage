@@ -93,7 +93,8 @@ export default function Auth() {
           <div className="w-12 h-12 rounded-xl bg-foreground flex items-center justify-center mb-4">
             <Package className="h-6 w-6 text-background" />
           </div>
-          <h1 className="text-lg font-semibold text-foreground">Asset Management</h1>
+          <h1 className="text-lg font-semibold text-foreground">Local Government Authority</h1>
+          <p className="text-sm text-muted-foreground mt-1">Asset Management System</p>
         </div>
 
         {/* Card */}
