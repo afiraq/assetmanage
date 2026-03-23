@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -22,6 +22,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [role, setRole] = useState<AppRole | null>(null);
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
   const fetchUserRole = async (userId: string) => {
     const { data, error } = await supabase
@@ -37,14 +40,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data?.role as AppRole;
   };
 
+  const handleInactivityLogout = useCallback(async () => {
+    await supabase.auth.signOut();
+    setRole(null);
+  }, []);
+
+  const resetInactivityTimer = useCallback(() => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    inactivityTimerRef.current = setTimeout(handleInactivityLogout, INACTIVITY_TIMEOUT);
+  }, [handleInactivityLogout]);
+
+  // Set up inactivity listeners when user is logged in
   useEffect(() => {
-    // Set up auth state listener FIRST
+    if (!user) return;
+
+    const events = ["mousedown", "keydown", "scroll", "touchstart", "mousemove"];
+    const handleActivity = () => resetInactivityTimer();
+
+    events.forEach((event) => window.addEventListener(event, handleActivity));
+    resetInactivityTimer(); // Start timer on mount
+
+    return () => {
+      events.forEach((event) => window.removeEventListener(event, handleActivity));
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [user, resetInactivityTimer]);
+
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Defer role fetching with setTimeout
         if (session?.user) {
           setTimeout(() => {
             fetchUserRole(session.user.id).then(setRole);
@@ -55,7 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
