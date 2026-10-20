@@ -1,4 +1,16 @@
 project_id = "dopokccaxdwhaznuyxqm"
 
+[api]
+enabled = true
+port = 54321
+external_url = "http://192.168.0.155:54321"
+
+[auth]
+site_url = "http://192.168.0.155:5173"
+additional_redirect_urls = ["http://192.168.0.155:5173"]
+
 [functions.ldap-auth]
+verify_jwt = false
+
+[functions.create-user]
 verify_jwt = false
